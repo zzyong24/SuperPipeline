@@ -32,33 +32,34 @@
 ### 3.1 分层架构
 
 ```
-┌─────────────────────────────────┐
-│  Clients                        │
-│  CLI (MVP) / API / 小程序 / APP │
-└──────────┬──────────────────────┘
+┌─────────────────────────────────────┐
+│  Web UI (Next.js)                   │
+│  工作台：管道监控 / 内容操作 / 数据看板│
+└──────────┬──────────────────────────┘
+           │ HTTP REST + WebSocket (实时状态推送)
+┌──────────▼──────────────────────────┐
+│  API Layer (FastAPI)                │
+│  REST 接口 + WebSocket 管道状态流    │
+└──────────┬──────────────────────────┘
            │
-┌──────────▼──────────────────────┐
-│  API Layer (FastAPI)            │
-│  MVP 阶段先做 CLI，API 后加     │
-│  core 层接口从第一天按可被调用设计│
-└──────────┬──────────────────────┘
+┌──────────▼──────────────────────────┐
+│  Core Engine                        │
+│  Orchestrator (LangGraph)           │
+│  Registry / State / Models          │
+└──────────┬──────────────────────────┘
            │
-┌──────────▼──────────────────────┐
-│  Core Engine                    │
-│  Orchestrator (LangGraph)       │
-│  Registry / State / Models      │
-└──────────┬──────────────────────┘
+┌──────────▼──────────────────────────┐
+│  Agents (可插拔模块)                 │
+│  选题 / 素材 / 生成 / 审核 / 复盘    │
+└──────────┬──────────────────────────┘
            │
-┌──────────▼──────────────────────┐
-│  Agents (可插拔模块)             │
-│  选题 / 素材 / 生成 / 审核 / 复盘│
-└──────────┬──────────────────────┘
-           │
-┌──────────▼──────────────────────┐
-│  Infrastructure                 │
-│  Storage / Model Adapters       │
-└─────────────────────────────────┘
+┌──────────▼──────────────────────────┐
+│  Infrastructure                     │
+│  Storage / Model Adapters           │
+└─────────────────────────────────────┘
 ```
+
+**实时通信**：管道运行状态通过 WebSocket 推送到前端，UI 实时展示每个 Agent 的进度、输入输出。不靠轮询。
 
 ### 3.2 Agent 通信模式
 
@@ -101,64 +102,110 @@ SuperPipeline/
 │   ├── agent-dev-guide.md         # 如何写一个新 Agent
 │   └── superpowers/specs/         # 设计文档
 │
-├── src/
-│   ├── core/                      # 核心引擎（稳定层）
-│   │   ├── orchestrator.py        # LangGraph 图构建器，读 YAML 动态组装管道
-│   │   ├── state.py               # PipelineState 定义
-│   │   ├── registry.py            # Agent 注册表（自动发现 + 注册）
-│   │   ├── models.py              # 模型适配器（可插拔）
-│   │   └── config.py              # 全局配置加载
+├── server/                        # Python 后端
+│   ├── src/
+│   │   ├── core/                  # 核心引擎（稳定层）
+│   │   │   ├── orchestrator.py    # LangGraph 图构建器
+│   │   │   ├── state.py           # PipelineState 定义
+│   │   │   ├── registry.py        # Agent 注册表
+│   │   │   ├── models.py          # 模型适配器
+│   │   │   └── config.py          # 全局配置加载
+│   │   │
+│   │   ├── agents/                # Agent 模块（每个一个目录）
+│   │   │   ├── base.py            # BaseAgent 抽象类
+│   │   │   ├── topic_generator/
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── agent.py
+│   │   │   │   ├── prompts/
+│   │   │   │   ├── schemas.py
+│   │   │   │   └── README.md
+│   │   │   ├── material_collector/
+│   │   │   ├── content_generator/
+│   │   │   ├── reviewer/
+│   │   │   └── analyst/
+│   │   │
+│   │   ├── platforms/             # 平台适配层
+│   │   │   ├── base.py
+│   │   │   ├── xiaohongshu.py
+│   │   │   ├── x_twitter.py
+│   │   │   ├── douyin.py
+│   │   │   └── bilibili.py
+│   │   │
+│   │   ├── api/                   # FastAPI 接口 + WebSocket
+│   │   │   ├── app.py
+│   │   │   ├── routes/
+│   │   │   │   ├── pipelines.py   # 管道触发、状态查询
+│   │   │   │   ├── contents.py    # 内容 CRUD
+│   │   │   │   └── assets.py      # 资源访问
+│   │   │   ├── ws.py              # WebSocket 管道状态推送
+│   │   │   └── schemas.py
+│   │   │
+│   │   └── storage/               # 存储层
+│   │       ├── state_store.py
+│   │       ├── asset_store.py
+│   │       └── models.py
 │   │
-│   ├── agents/                    # Agent 模块（每个 Agent 一个目录）
-│   │   ├── base.py                # BaseAgent 抽象类
-│   │   ├── topic_generator/       # 选题 Agent
-│   │   │   ├── __init__.py        # 注册入口
-│   │   │   ├── agent.py           # 核心逻辑
-│   │   │   ├── prompts/           # prompt 模板（Jinja2）
-│   │   │   ├── schemas.py         # 输入/输出/配置 Schema
-│   │   │   └── README.md          # Agent 说明文档
-│   │   ├── material_collector/    # 素材 Agent
-│   │   ├── content_generator/     # 生成 Agent
-│   │   ├── reviewer/              # 审核 Agent
-│   │   └── analyst/               # 复盘 Agent
+│   ├── pipelines/                 # 管道配置（YAML）
+│   │   ├── xiaohongshu_image_text.yaml
+│   │   ├── x_thread.yaml
+│   │   └── bilibili_article.yaml
 │   │
-│   ├── platforms/                 # 平台适配层
-│   │   ├── base.py                # BasePlatform 抽象类
-│   │   ├── xiaohongshu.py         # 小红书规范
-│   │   ├── x_twitter.py           # X 规范
-│   │   ├── douyin.py              # 抖音规范
-│   │   └── bilibili.py            # B站规范
+│   ├── prompts/                   # 全局 prompt 库
+│   │   ├── styles/
+│   │   └── platforms/
 │   │
-│   ├── api/                       # API 层（MVP 后期加）
-│   │   ├── app.py                 # FastAPI 入口
-│   │   ├── routes/                # 路由
-│   │   └── schemas.py             # API Schema
+│   ├── tests/
+│   │   ├── agents/
+│   │   └── integration/
 │   │
-│   └── storage/                   # 存储层
-│       ├── state_store.py         # SQLite 状态持久化
-│       ├── asset_store.py         # 文件存储
-│       └── models.py              # DB Schema
+│   ├── config.yaml
+│   └── pyproject.toml
 │
-├── pipelines/                     # 管道配置（YAML）
-│   ├── xiaohongshu_image_text.yaml
-│   ├── x_thread.yaml
-│   └── bilibili_article.yaml
-│
-├── prompts/                       # 全局 prompt 库
-│   ├── styles/                    # 风格模板
-│   └── platforms/                 # 平台规范 prompt
-│
-├── tests/
-│   ├── agents/                    # Agent 独立测试
-│   └── integration/               # 端到端管道测试
+├── web/                           # Next.js 前端工作台
+│   ├── src/
+│   │   ├── app/                   # App Router
+│   │   │   ├── page.tsx           # 首页（仪表盘）
+│   │   │   ├── pipelines/
+│   │   │   │   ├── page.tsx       # 管道列表 + 触发
+│   │   │   │   └── [runId]/
+│   │   │   │       └── page.tsx   # 单次运行详情（实时监控）
+│   │   │   ├── contents/
+│   │   │   │   ├── page.tsx       # 内容列表（审核/发布）
+│   │   │   │   └── [id]/
+│   │   │   │       └── page.tsx   # 内容详情 + 编辑
+│   │   │   └── analytics/
+│   │   │       └── page.tsx       # 数据看板
+│   │   │
+│   │   ├── components/
+│   │   │   ├── pipeline/
+│   │   │   │   ├── PipelineGraph.tsx    # 管道流程图（节点 + 边 + 实时状态）
+│   │   │   │   ├── AgentNode.tsx        # Agent 节点（状态指示灯）
+│   │   │   │   ├── StageDetail.tsx      # 阶段输入/输出展示
+│   │   │   │   └── RunTimeline.tsx      # 运行时间线
+│   │   │   ├── content/
+│   │   │   │   ├── ContentPreview.tsx   # 内容预览（按平台格式）
+│   │   │   │   ├── ContentEditor.tsx    # 内容编辑
+│   │   │   │   └── ReviewBadge.tsx      # 审核状态标签
+│   │   │   └── dashboard/
+│   │   │       ├── StatsCards.tsx        # 统计卡片
+│   │   │       └── RecentRuns.tsx        # 最近运行列表
+│   │   │
+│   │   ├── hooks/
+│   │   │   ├── usePipelineWS.ts         # WebSocket 订阅管道状态
+│   │   │   └── useApi.ts                # API 请求封装
+│   │   │
+│   │   └── lib/
+│   │       ├── api-client.ts            # 后端 API 客户端
+│   │       └── types.ts                 # 和后端 Schema 对齐的 TS 类型
+│   │
+│   ├── package.json
+│   └── next.config.ts
 │
 ├── data/                          # 运行时数据（.gitignore）
-│   ├── assets/                    # 图片、素材文件
-│   ├── outputs/                   # 生成的内容
-│   └── superpipeline.db           # SQLite
+│   ├── assets/
+│   ├── outputs/
+│   └── superpipeline.db
 │
-├── config.yaml                    # 全局配置（模型、存储等）
-├── pyproject.toml
 └── README.md
 ```
 
@@ -373,14 +420,71 @@ data/
 └── superpipeline.db
 ```
 
-## 8. 错误处理策略
+## 8. Web UI 工作台设计
+
+### 8.1 技术栈
+
+- **框架**：Next.js（App Router），与 MoonOS 技术栈统一
+- **实时通信**：WebSocket 订阅管道状态变更
+- **可视化**：管道流程图用 React Flow，数据看板用 Recharts
+
+### 8.2 四个核心页面
+
+**① 仪表盘（首页）**
+- 今日运行统计（成功/失败/进行中）
+- 最近运行列表（带状态标签）
+- 待审核内容数量提醒
+- 快速触发入口
+
+**② 管道监控（/pipelines/[runId]）**
+- **核心组件：管道流程图**
+  - 横向展示 Agent 节点链：选题 → 素材 → 生成 → 审核 → 待发布 → 复盘
+  - 每个节点有状态指示灯：⏳等待 / 🔄运行中 / ✅完成 / ❌失败
+  - 点击节点展开该阶段的输入/输出详情
+  - WebSocket 实时推送，节点状态实时变化，无需刷新
+- 运行时间线：每个阶段的耗时和时间戳
+- 错误面板：失败阶段的错误信息和重试按钮
+
+**③ 内容管理（/contents）**
+- 内容列表：按状态过滤（待审核 / 已通过 / 已发布 / 已拒绝）
+- 内容预览：按目标平台格式渲染（小红书样式 / X 样式）
+- 内容编辑：可人工微调后重新提交审核
+- 发布确认：标记已发布，填入发布链接，触发复盘
+
+**④ 数据看板（/analytics）**
+- 内容产出趋势（日/周维度）
+- 各平台发布统计
+- 审核通过率
+- 复盘 Agent 的改进建议汇总
+
+### 8.3 实时通信协议
+
+后端在管道运行时通过 WebSocket 推送状态事件：
+
+```typescript
+// 前端收到的事件类型
+type PipelineEvent =
+  | { type: "stage_started"; agent: string; timestamp: string }
+  | { type: "stage_completed"; agent: string; output_summary: string; timestamp: string }
+  | { type: "stage_failed"; agent: string; error: string; timestamp: string }
+  | { type: "pipeline_completed"; run_id: string; summary: RunSummary }
+```
+
+前端通过 `usePipelineWS(runId)` hook 订阅，驱动流程图节点状态更新。
+
+### 8.4 前后端对齐
+
+- 后端 Pydantic Schema → 导出 JSON Schema → 前端 TypeScript 类型自动生成
+- 保证前后端数据结构零偏差
+
+## 9. 错误处理策略
 
 - Agent 级别：每个 Agent 的错误写入 `state.errors`，不中断管道
 - 管道级别：可配置 `on_error: skip | retry | halt`
 - 重试：Agent 级别可配置重试次数和退避策略
 - 断点续跑：LangGraph checkpointer 支持从失败点恢复
 
-## 9. 扩展路径
+## 10. 扩展路径
 
 | 阶段 | 新增内容 | 改动范围 |
 |------|---------|---------|
@@ -391,12 +495,14 @@ data/
 | 加视频 | 新 Agent + 新 Pipeline YAML | 不改已有模块 |
 | 全自动调度 | 加 scheduler 模块，调 core 函数 | 不改 core/agents |
 
-## 10. MVP 交付物
+## 11. MVP 交付物
 
 1. 核心引擎：Orchestrator + Registry + State + ModelAdapter
 2. 5 个 Agent：选题、素材、生成、审核、复盘
 3. 2 个平台适配：小红书 + X
 4. 1 个 Pipeline YAML：小红书图文
-5. CLI 入口：命令行触发和查看
-6. 文档：架构文档 + Agent 开发指南
-7. 测试：每个 Agent 独立测试 + 一个端到端测试
+5. API 层：FastAPI REST + WebSocket 状态推送
+6. Web UI：Next.js 工作台（仪表盘 + 管道监控 + 内容管理 + 数据看板）
+7. CLI 入口：命令行触发和查看（开发调试用）
+8. 文档：架构文档 + Agent 开发指南
+9. 测试：每个 Agent 独立测试 + 一个端到端测试
