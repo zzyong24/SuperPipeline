@@ -26,20 +26,38 @@
 | 触发方式 | 渐进式（MVP 手动触发） | 架构预留调度接口，后续可接 cron/事件驱动 |
 | 发布方式 | 手动发布 | 防封控，审核由 Agent 自动完成，发布人工操作 |
 | 目标平台 | X、小红书、抖音、B站 | 主流平台，通过平台适配层扩展 |
+| 主接口 | CLI（Agent 调用） | 远程 Agent 通过 CLI 驱动管道，性能好、可编排 |
+| Web UI | 轻量只读工作台 | 看状态、复制内容、手动分发，不做重交互 |
 
 ## 3. 系统架构
 
-### 3.1 分层架构
+### 3.1 协作模式
+
+```
+远程电脑 (Agent)                     服务器                        办公电脑/手机
+┌──────────────┐    CLI/Skills    ┌─────────────────┐    Web UI    ┌────────────┐
+│ Claude Code  │ ──────────────▶ │  SuperPipeline  │ ◀─────────── │  浏览器     │
+│ Agent        │  SSH + CLI      │  Server         │   HTTP       │  看状态     │
+│              │                 │                 │              │  复制内容   │
+└──────────────┘                 └─────────────────┘              │  手动分发   │
+  主接口：CLI                      Core + API + DB                └────────────┘
+  全自动编排                                                       辅助接口：Web
+```
+
+### 3.2 分层架构
 
 ```
 ┌─────────────────────────────────────┐
-│  Web UI (Next.js)                   │
-│  工作台：管道监控 / 内容操作 / 数据看板│
+│  CLI (主接口，Agent 调用)            │
+│  sp run / sp status / sp content    │
+├─────────────────────────────────────┤
+│  Web UI (辅助，人工查看)             │
+│  状态监控 / 内容复制 / 手动分发      │
 └──────────┬──────────────────────────┘
-           │ HTTP REST + WebSocket (实时状态推送)
+           │ HTTP REST + SSE (状态推送)
 ┌──────────▼──────────────────────────┐
 │  API Layer (FastAPI)                │
-│  REST 接口 + WebSocket 管道状态流    │
+│  CLI 和 Web 共用同一套 API           │
 └──────────┬──────────────────────────┘
            │
 ┌──────────▼──────────────────────────┐
@@ -59,9 +77,10 @@
 └─────────────────────────────────────┘
 ```
 
-**实时通信**：管道运行状态通过 WebSocket 推送到前端，UI 实时展示每个 Agent 的进度、输入输出。不靠轮询。
+**CLI 是一等公民**：所有操作都能通过 CLI 完成，远程 Agent 通过 SSH + CLI 驱动整个管道。
+**Web UI 是只读窗口**：给人看的，不做复杂交互。
 
-### 3.2 Agent 通信模式
+### 3.3 Agent 通信模式
 
 Agent 之间通过 LangGraph 的 State 解耦，不直接调用：
 
@@ -69,7 +88,7 @@ Agent 之间通过 LangGraph 的 State 解耦，不直接调用：
 - Orchestrator 根据 YAML 配置决定流转顺序
 - Agent 之间零依赖——移除任何一个 Agent，其他 Agent 不受影响
 
-### 3.3 MVP 管道流程
+### 3.4 MVP 管道流程
 
 ```
 用户输入 Brief
@@ -131,13 +150,23 @@ SuperPipeline/
 │   │   │   ├── douyin.py
 │   │   │   └── bilibili.py
 │   │   │
-│   │   ├── api/                   # FastAPI 接口 + WebSocket
+│   │   ├── cli/                   # CLI 主接口（Agent 调用入口）
+│   │   │   ├── app.py             # Click/Typer 入口
+│   │   │   ├── commands/
+│   │   │   │   ├── run.py         # sp run <pipeline> --brief "..."
+│   │   │   │   ├── status.py      # sp status [run_id]
+│   │   │   │   ├── content.py     # sp content list / get / approve
+│   │   │   │   ├── agent.py       # sp agent list / run <agent>
+│   │   │   │   └── pipeline.py    # sp pipeline list / show
+│   │   │   └── formatters.py      # 输出格式化（JSON / table / plain）
+│   │   │
+│   │   ├── api/                   # FastAPI（Web UI 的后端）
 │   │   │   ├── app.py
 │   │   │   ├── routes/
-│   │   │   │   ├── pipelines.py   # 管道触发、状态查询
-│   │   │   │   ├── contents.py    # 内容 CRUD
-│   │   │   │   └── assets.py      # 资源访问
-│   │   │   ├── ws.py              # WebSocket 管道状态推送
+│   │   │   │   ├── pipelines.py
+│   │   │   │   ├── contents.py
+│   │   │   │   └── assets.py
+│   │   │   ├── sse.py             # SSE 管道状态推送（比 WS 轻量）
 │   │   │   └── schemas.py
 │   │   │
 │   │   └── storage/               # 存储层
@@ -161,43 +190,22 @@ SuperPipeline/
 │   ├── config.yaml
 │   └── pyproject.toml
 │
-├── web/                           # Next.js 前端工作台
+├── web/                           # Next.js 轻量 UI（只读为主）
 │   ├── src/
-│   │   ├── app/                   # App Router
-│   │   │   ├── page.tsx           # 首页（仪表盘）
-│   │   │   ├── pipelines/
-│   │   │   │   ├── page.tsx       # 管道列表 + 触发
+│   │   ├── app/
+│   │   │   ├── page.tsx           # 仪表盘（运行概览）
+│   │   │   ├── runs/
 │   │   │   │   └── [runId]/
-│   │   │   │       └── page.tsx   # 单次运行详情（实时监控）
-│   │   │   ├── contents/
-│   │   │   │   ├── page.tsx       # 内容列表（审核/发布）
-│   │   │   │   └── [id]/
-│   │   │   │       └── page.tsx   # 内容详情 + 编辑
-│   │   │   └── analytics/
-│   │   │       └── page.tsx       # 数据看板
-│   │   │
+│   │   │   │       └── page.tsx   # 管道状态可视化
+│   │   │   └── contents/
+│   │   │       └── page.tsx       # 内容列表 + 复制 + 标记已发布
 │   │   ├── components/
-│   │   │   ├── pipeline/
-│   │   │   │   ├── PipelineGraph.tsx    # 管道流程图（节点 + 边 + 实时状态）
-│   │   │   │   ├── AgentNode.tsx        # Agent 节点（状态指示灯）
-│   │   │   │   ├── StageDetail.tsx      # 阶段输入/输出展示
-│   │   │   │   └── RunTimeline.tsx      # 运行时间线
-│   │   │   ├── content/
-│   │   │   │   ├── ContentPreview.tsx   # 内容预览（按平台格式）
-│   │   │   │   ├── ContentEditor.tsx    # 内容编辑
-│   │   │   │   └── ReviewBadge.tsx      # 审核状态标签
-│   │   │   └── dashboard/
-│   │   │       ├── StatsCards.tsx        # 统计卡片
-│   │   │       └── RecentRuns.tsx        # 最近运行列表
-│   │   │
-│   │   ├── hooks/
-│   │   │   ├── usePipelineWS.ts         # WebSocket 订阅管道状态
-│   │   │   └── useApi.ts                # API 请求封装
-│   │   │
+│   │   │   ├── PipelineGraph.tsx   # 管道流程图（节点状态）
+│   │   │   ├── ContentCard.tsx     # 内容卡片（预览 + 一键复制）
+│   │   │   └── RunList.tsx         # 运行列表
 │   │   └── lib/
-│   │       ├── api-client.ts            # 后端 API 客户端
-│   │       └── types.ts                 # 和后端 Schema 对齐的 TS 类型
-│   │
+│   │       ├── api-client.ts
+│   │       └── types.ts
 │   ├── package.json
 │   └── next.config.ts
 │
@@ -420,71 +428,105 @@ data/
 └── superpipeline.db
 ```
 
-## 8. Web UI 工作台设计
+## 8. CLI 接口设计（主接口）
 
-### 8.1 技术栈
+CLI 是整个系统的主操作接口，远程 Agent 通过 SSH + CLI 驱动管道。
 
-- **框架**：Next.js（App Router），与 MoonOS 技术栈统一
-- **实时通信**：WebSocket 订阅管道状态变更
-- **可视化**：管道流程图用 React Flow，数据看板用 Recharts
+### 8.1 命令结构
 
-### 8.2 四个核心页面
+```bash
+sp run <pipeline> --brief "主题描述"    # 触发管道，返回 run_id
+sp run <pipeline> --brief-file brief.json  # 从文件读取 brief
 
-**① 仪表盘（首页）**
-- 今日运行统计（成功/失败/进行中）
-- 最近运行列表（带状态标签）
-- 待审核内容数量提醒
-- 快速触发入口
+sp status                               # 列出所有运行（最近 20 条）
+sp status <run_id>                      # 查看单次运行详情（各阶段状态）
+sp status <run_id> --stage <agent>      # 查看某阶段的输入/输出
 
-**② 管道监控（/pipelines/[runId]）**
-- **核心组件：管道流程图**
-  - 横向展示 Agent 节点链：选题 → 素材 → 生成 → 审核 → 待发布 → 复盘
-  - 每个节点有状态指示灯：⏳等待 / 🔄运行中 / ✅完成 / ❌失败
-  - 点击节点展开该阶段的输入/输出详情
-  - WebSocket 实时推送，节点状态实时变化，无需刷新
-- 运行时间线：每个阶段的耗时和时间戳
-- 错误面板：失败阶段的错误信息和重试按钮
+sp content list                         # 列出待发布内容
+sp content list --status approved       # 按状态过滤
+sp content get <content_id>             # 获取内容详情（文本 + 图片路径）
+sp content get <content_id> --copy      # 输出纯文本（方便管道传递）
+sp content approve <content_id>         # 标记已发布，触发复盘
 
-**③ 内容管理（/contents）**
-- 内容列表：按状态过滤（待审核 / 已通过 / 已发布 / 已拒绝）
-- 内容预览：按目标平台格式渲染（小红书样式 / X 样式）
-- 内容编辑：可人工微调后重新提交审核
-- 发布确认：标记已发布，填入发布链接，触发复盘
+sp agent list                           # 列出所有已注册 Agent
+sp agent run <agent> --input input.json # 单独运行某个 Agent（调试用）
 
-**④ 数据看板（/analytics）**
-- 内容产出趋势（日/周维度）
-- 各平台发布统计
-- 审核通过率
-- 复盘 Agent 的改进建议汇总
-
-### 8.3 实时通信协议
-
-后端在管道运行时通过 WebSocket 推送状态事件：
-
-```typescript
-// 前端收到的事件类型
-type PipelineEvent =
-  | { type: "stage_started"; agent: string; timestamp: string }
-  | { type: "stage_completed"; agent: string; output_summary: string; timestamp: string }
-  | { type: "stage_failed"; agent: string; error: string; timestamp: string }
-  | { type: "pipeline_completed"; run_id: string; summary: RunSummary }
+sp pipeline list                        # 列出所有管道配置
+sp pipeline show <name>                 # 查看管道配置详情
 ```
 
-前端通过 `usePipelineWS(runId)` hook 订阅，驱动流程图节点状态更新。
+### 8.2 输出格式
 
-### 8.4 前后端对齐
+所有命令支持 `--format` 参数，默认 table，Agent 调用时用 json：
 
-- 后端 Pydantic Schema → 导出 JSON Schema → 前端 TypeScript 类型自动生成
-- 保证前后端数据结构零偏差
+```bash
+sp status --format json                 # JSON 输出，Agent 解析友好
+sp status --format table                # 人类可读表格（默认）
+sp content get <id> --format json       # 结构化输出，含所有字段
+```
 
-## 9. 错误处理策略
+### 8.3 Agent 调用示例
+
+远程 Agent 的典型调用流程：
+
+```bash
+# 1. 触发管道
+RUN_ID=$(sp run xiaohongshu_image_text --brief "AI 编程工具测评" --format json | jq -r '.run_id')
+
+# 2. 等待完成（轮询或阻塞）
+sp status $RUN_ID --wait                # 阻塞直到完成或失败
+
+# 3. 获取生成的内容
+sp content list --run $RUN_ID --format json
+
+# 4. 发布后标记
+sp content approve <content_id> --publish-url "https://..."
+```
+
+### 8.4 退出码约定
+
+- 0: 成功
+- 1: 一般错误
+- 2: 参数错误
+- 3: 管道运行失败（部分 Agent 失败）
+- 4: 资源不存在
+
+Agent 可通过退出码判断是否需要重试或告警。
+
+## 9. Web UI 设计（轻量辅助）
+
+Web UI 定位：**给人看的只读窗口**，方便手机/电脑上查看状态和复制内容去发布。
+
+### 9.1 技术栈
+
+- Next.js（App Router），与 MoonOS 技术栈统一
+- SSE 替代 WebSocket（更轻量，单向推送够用）
+
+### 9.2 三个页面
+
+**① 仪表盘（/）**
+- 最近运行列表 + 状态标签
+- 待发布内容数量
+
+**② 管道状态（/runs/[runId]）**
+- 管道流程图：节点链 + 状态指示灯（SSE 实时更新）
+- 点击节点看该阶段输出摘要
+- 错误信息展示
+
+**③ 内容列表（/contents）**
+- 按平台 + 状态过滤
+- 内容预览卡片
+- **一键复制**按钮（复制文本到剪贴板）
+- 标记已发布按钮
+
+## 10. 错误处理策略
 
 - Agent 级别：每个 Agent 的错误写入 `state.errors`，不中断管道
 - 管道级别：可配置 `on_error: skip | retry | halt`
 - 重试：Agent 级别可配置重试次数和退避策略
 - 断点续跑：LangGraph checkpointer 支持从失败点恢复
 
-## 10. 扩展路径
+## 11. 扩展路径
 
 | 阶段 | 新增内容 | 改动范围 |
 |------|---------|---------|
@@ -495,14 +537,14 @@ type PipelineEvent =
 | 加视频 | 新 Agent + 新 Pipeline YAML | 不改已有模块 |
 | 全自动调度 | 加 scheduler 模块，调 core 函数 | 不改 core/agents |
 
-## 11. MVP 交付物
+## 12. MVP 交付物
 
 1. 核心引擎：Orchestrator + Registry + State + ModelAdapter
 2. 5 个 Agent：选题、素材、生成、审核、复盘
 3. 2 个平台适配：小红书 + X
 4. 1 个 Pipeline YAML：小红书图文
-5. API 层：FastAPI REST + WebSocket 状态推送
-6. Web UI：Next.js 工作台（仪表盘 + 管道监控 + 内容管理 + 数据看板）
-7. CLI 入口：命令行触发和查看（开发调试用）
-8. 文档：架构文档 + Agent 开发指南
+5. CLI 完整接口：`sp` 命令，支持 JSON 输出，Agent 可编排
+6. API 层：FastAPI REST + SSE 状态推送
+7. Web UI：轻量 Next.js（状态查看 + 内容复制 + 标记发布）
+8. 文档：架构文档 + Agent 开发指南 + CLI 使用文档
 9. 测试：每个 Agent 独立测试 + 一个端到端测试
