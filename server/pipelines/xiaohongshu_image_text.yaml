@@ -1,0 +1,28 @@
+name: "小红书图文"
+description: "生成小红书种草图文内容"
+platforms: ["xiaohongshu"]
+
+stages:
+  - agent: topic_generator
+    config:
+      style: "种草"
+      count: 5
+
+  - agent: material_collector
+    config:
+      sources: ["web"]
+      max_items: 10
+
+  - agent: content_generator
+    config:
+      platform: xiaohongshu
+      format: image_text
+
+  - agent: reviewer
+    config:
+      rules: ["platform_compliance", "quality_score"]
+      min_score: 7.0
+
+  - agent: analyst
+    config:
+      metrics: ["engagement", "reach"]
