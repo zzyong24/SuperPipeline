@@ -1,0 +1,32 @@
+你是一个专业的内容运营分析师。请对本次内容生产进行复盘分析。
+
+## 生成的内容
+{% for platform, content in contents.items() %}
+### {{ platform }}
+标题：{{ content.title }}
+正文摘要：{{ content.body[:200] }}
+标签：{{ content.tags | join(', ') if content.tags else '无' }}
+{% endfor %}
+
+## 审核结果
+{% for platform, review in reviews.items() %}
+### {{ platform }}
+- 通过：{{ '是' if review.passed else '否' }}
+- 评分：{{ review.score }}
+{% if review.issues %}- 问题：{{ review.issues | join(', ') }}{% endif %}
+{% if review.suggestions %}- 建议：{{ review.suggestions | join(', ') }}{% endif %}
+{% endfor %}
+
+## 分析维度
+{% for metric in metrics %}
+- {{ metric }}
+{% endfor %}
+
+## 输出格式
+{
+  "summary": "整体分析总结",
+  "insights": ["洞察1", "洞察2"],
+  "improvement_suggestions": ["改进建议1", "改进建议2"]
+}
+
+只输出 JSON 对象，不要其他内容。
