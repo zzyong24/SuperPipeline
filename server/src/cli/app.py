@@ -9,6 +9,7 @@ from src.cli.commands.run import run_command
 from src.cli.commands.status import status_command
 from src.cli.commands import content as content_cmd
 from src.cli.commands import agent as agent_cmd
+from src.cli.commands import stage as stage_cmd
 
 app = typer.Typer(
     name="sp",
@@ -21,6 +22,7 @@ app.command("run")(run_command)
 app.command("status")(status_command)
 app.add_typer(content_cmd.app, name="content")
 app.add_typer(agent_cmd.app, name="agent")
+app.add_typer(stage_cmd.app, name="stage")
 
 
 if __name__ == "__main__":
