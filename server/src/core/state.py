@@ -83,6 +83,9 @@ class StageConfig(BaseModel):
     config: dict = Field(default_factory=dict)
     on_error: str = Field(default="halt", description="skip | retry | halt")
     retry_count: int = Field(default=1)
+    model_override: str | None = Field(default=None, description="Override model name for this stage")
+    model_provider: str | None = Field(default=None, description="Override model provider for this stage")
+    prompt_override: str | None = Field(default=None, description="Override prompt template with raw text")
 
 
 class PipelineConfig(BaseModel):
