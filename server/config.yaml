@@ -1,0 +1,21 @@
+models:
+  text:
+    provider: minimax
+    api_key: ${MINIMAX_API_KEY}
+    base_url: "https://api.minimax.chat/v1"
+    model: "abab6.5-chat"
+    max_tokens: 4096
+  image:
+    provider: minimax
+    api_key: ${MINIMAX_API_KEY}
+    base_url: "https://api.minimax.chat/v1"
+    model: "abab6.5-image"
+
+storage:
+  db_path: "data/superpipeline.db"
+  assets_dir: "data/assets"
+  outputs_dir: "data/outputs"
+
+server:
+  host: "0.0.0.0"
+  port: 8000
