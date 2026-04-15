@@ -7,6 +7,7 @@ import { api } from "@/lib/api-client";
 import type { Run, Content, PipelineState } from "@/lib/types";
 import { RunStatusBadge } from "@/components/runs/RunStatusBadge";
 import { PipelineProgress } from "@/components/runs/PipelineProgress";
+import { StageDetail } from "@/components/runs/StageDetail";
 import { ImagePlaceholder } from "@/components/contents/ImagePlaceholder";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -59,8 +60,14 @@ export default function RunDetail() {
   const [contents, setContents] = useState<Content[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedStage, setSelectedStage] = useState<string | null>(null);
 
   useEffect(() => {
+    loadData();
+  }, [runId]);
+
+  function loadData() {
+    setLoading(true);
     Promise.all([api.getRun(runId), api.listContents({ run_id: runId })])
       .then(([r, c]) => {
         setRun(r);
@@ -68,7 +75,7 @@ export default function RunDetail() {
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [runId]);
+  }
 
   if (loading) {
     return (
@@ -120,9 +127,28 @@ export default function RunDetail() {
       {/* Pipeline Progress */}
       <Card>
         <CardContent className="py-5 flex justify-center">
-          <PipelineProgress stageStatuses={stageStatuses} />
+          <PipelineProgress
+            stageStatuses={stageStatuses}
+            selectedStage={selectedStage}
+            onStageClick={(agent) =>
+              setSelectedStage((prev) => (prev === agent ? null : agent))
+            }
+          />
         </CardContent>
       </Card>
+
+      {/* Stage Detail Panel */}
+      {selectedStage && (
+        <StageDetail
+          runId={runId}
+          agent={selectedStage}
+          onClose={() => setSelectedStage(null)}
+          onRerun={() => {
+            setSelectedStage(null);
+            loadData();
+          }}
+        />
+      )}
 
       {/* Errors */}
       {state?.errors && state.errors.length > 0 && (

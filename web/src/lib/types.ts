@@ -121,3 +121,17 @@ export interface PipelineEvent {
   output_summary?: string;
   error?: string;
 }
+
+export interface StageSnapshot {
+  id: number;
+  run_id: string;
+  agent: string;
+  version: number;
+  status: string;
+  config: Record<string, any>;
+  inputs: Record<string, any>;
+  outputs: Record<string, any> | null;
+  error: string | null;
+  duration_ms: number | null;
+  created_at: string;
+}

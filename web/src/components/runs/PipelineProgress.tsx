@@ -11,23 +11,32 @@ const STAGES = [
 
 interface PipelineProgressProps {
   stageStatuses: Record<string, "completed" | "running" | "failed" | "pending">;
+  selectedStage?: string | null;
+  onStageClick?: (agent: string) => void;
 }
 
-export function PipelineProgress({ stageStatuses }: PipelineProgressProps) {
+export function PipelineProgress({ stageStatuses, selectedStage, onStageClick }: PipelineProgressProps) {
   return (
     <div className="flex items-center gap-0">
       {STAGES.map((stage, i) => {
         const status = stageStatuses[stage.key] || "pending";
+        const isSelected = selectedStage === stage.key;
         return (
           <div key={stage.key} className="flex items-center">
-            <div className="flex flex-col items-center gap-1.5">
+            <button
+              type="button"
+              className="flex flex-col items-center gap-1.5 group"
+              onClick={() => onStageClick?.(stage.key)}
+            >
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium border-2 transition-colors",
                   status === "completed" && "bg-emerald-50 border-emerald-400 text-emerald-600",
                   status === "running" && "bg-blue-50 border-blue-400 text-blue-600 animate-pulse",
                   status === "failed" && "bg-red-50 border-red-400 text-red-600",
-                  status === "pending" && "bg-muted border-border text-muted-foreground"
+                  status === "pending" && "bg-muted border-border text-muted-foreground",
+                  isSelected && "ring-2 ring-primary ring-offset-1",
+                  onStageClick && "cursor-pointer group-hover:scale-110 transition-transform"
                 )}
               >
                 {status === "completed" && <Check className="h-4 w-4" />}
@@ -46,7 +55,7 @@ export function PipelineProgress({ stageStatuses }: PipelineProgressProps) {
               >
                 {stage.label}
               </span>
-            </div>
+            </button>
             {i < STAGES.length - 1 && (
               <div
                 className={cn(

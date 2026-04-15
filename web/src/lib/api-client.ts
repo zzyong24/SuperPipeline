@@ -1,4 +1,4 @@
-import type { Run, Content, Pipeline, PipelineDetail } from "./types";
+import type { Run, Content, Pipeline, PipelineDetail, StageSnapshot } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -34,4 +34,25 @@ export const api = {
     }),
   listPipelines: () => fetchApi<Pipeline[]>("/api/pipelines"),
   getPipeline: (name: string) => fetchApi<PipelineDetail>(`/api/pipelines/${name}`),
+  listStages: (runId: string) => fetchApi<StageSnapshot[]>(`/api/runs/${runId}/stages`),
+  getStage: (runId: string, agent: string, version?: number) => {
+    const params = version ? `?version=${version}` : "";
+    return fetchApi<StageSnapshot>(`/api/runs/${runId}/stages/${agent}${params}`);
+  },
+  editStageOutputs: (runId: string, agent: string, outputs: Record<string, any>) =>
+    fetchApi<StageSnapshot>(`/api/runs/${runId}/stages/${agent}`, {
+      method: "PUT",
+      body: JSON.stringify({ outputs }),
+    }),
+  rerunStage: (
+    runId: string,
+    agent: string,
+    data: { config?: Record<string, any>; model?: string; prompt?: string; only?: boolean }
+  ) =>
+    fetchApi<{ status: string; run_id: string }>(`/api/runs/${runId}/stages/${agent}/rerun`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  getStageHistory: (runId: string, agent: string) =>
+    fetchApi<StageSnapshot[]>(`/api/runs/${runId}/stages/${agent}/history`),
 };
