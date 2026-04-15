@@ -6,7 +6,7 @@ import json
 
 from pydantic import BaseModel
 
-from src.agents.base import BaseAgent
+from src.agents.base import BaseAgent, extract_json
 from src.agents.topic_generator.schemas import TopicGenConfig
 from src.core.state import Topic, UserBrief
 
@@ -33,11 +33,14 @@ class TopicGeneratorAgent(BaseAgent):
         response = await self.model.generate(prompt, temperature=cfg.temperature)
 
         try:
-            raw_topics = json.loads(response.strip())
+            json_str = extract_json(response)
+            raw_topics = json.loads(json_str)
             if not isinstance(raw_topics, list):
                 raise ValueError("Expected a JSON array")
         except (json.JSONDecodeError, ValueError) as e:
-            raise ValueError(f"Failed to parse topic generation response: {e}") from e
+            raise ValueError(
+                f"Failed to parse topic generation response: {e}\nRaw response: {response[:500]}"
+            ) from e
 
         topics = [Topic.model_validate(t).model_dump() for t in raw_topics]
         selected = max(topics, key=lambda t: t.get("score", 0)) if topics else None

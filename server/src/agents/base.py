@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar
@@ -10,6 +11,19 @@ import jinja2
 from pydantic import BaseModel
 
 from src.core.models import ModelAdapter
+
+
+def extract_json(text: str) -> str:
+    """Extract JSON from model response, handling markdown code blocks."""
+    # Try to find ```json ... ``` block
+    m = re.search(r"```(?:json)?\s*\n?(.*?)```", text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    # Try to find raw JSON array or object
+    m = re.search(r"(\[.*\]|\{.*\})", text, re.DOTALL)
+    if m:
+        return m.group(1).strip()
+    return text.strip()
 
 
 class BaseAgent(ABC):

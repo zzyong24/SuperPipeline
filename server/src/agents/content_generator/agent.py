@@ -6,7 +6,7 @@ import json
 
 from pydantic import BaseModel
 
-from src.agents.base import BaseAgent
+from src.agents.base import BaseAgent, extract_json, extract_json
 from src.agents.content_generator.schemas import ContentGenConfig
 from src.core.state import PlatformContent, Topic, Material
 from src.platforms.base import get_platform
@@ -43,11 +43,11 @@ class ContentGeneratorAgent(BaseAgent):
         response = await self.model.generate(prompt, temperature=cfg.temperature)
 
         try:
-            raw_content = json.loads(response.strip())
+            raw_content = json.loads(extract_json(response))
             if not isinstance(raw_content, dict):
                 raise ValueError("Expected a JSON object")
         except (json.JSONDecodeError, ValueError) as e:
-            raise ValueError(f"Failed to parse content generation response: {e}") from e
+            raise ValueError(f"Failed to parse content generation response: {e}\nRaw: {response[:500]}") from e
 
         content = PlatformContent(
             platform=cfg.platform,

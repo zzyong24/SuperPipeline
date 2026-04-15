@@ -15,7 +15,7 @@ from src.storage.state_store import StateStore
 
 
 def _get_store() -> StateStore:
-    config_path = Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent / "config.yaml"))
+    config_path = Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent.parent / "config.yaml"))
     config = load_config(config_path)
     return StateStore(config.storage.db_path)
 

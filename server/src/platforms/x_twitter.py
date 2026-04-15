@@ -15,9 +15,9 @@ class XPlatform(BasePlatform):
         body = content.get("body", "")
         tags = content.get("tags", [])
         if len(body) > self.max_text_length:
-            issues.append(f"Tweet length {len(body)} exceeds {self.max_text_length} limit")
+            issues.append(f"推文字数 {len(body)} 超过限制 {self.max_text_length}")
         if len(tags) > self.max_tags:
-            issues.append(f"Too many hashtags: {len(tags)}, max {self.max_tags}")
+            issues.append(f"标签数 {len(tags)} 超过限制 {self.max_tags}")
         return issues
 
     def format_content(self, body: str, **kwargs) -> str:
@@ -31,10 +31,10 @@ class XPlatform(BasePlatform):
 
     def get_rules_prompt(self) -> str:
         return (
-            "Platform: X (Twitter). Requirements:\n"
-            f"- Max {self.max_text_length} characters per tweet\n"
-            "- Be concise and punchy\n"
-            f"- Max {self.max_tags} hashtags\n"
-            f"- Max {self.max_images} images\n"
-            "- Engage with questions or hot takes"
+            "平台：X (Twitter)。要求：\n"
+            f"- 每条推文不超过 {self.max_text_length} 字符\n"
+            "- 简洁有力，观点鲜明\n"
+            f"- 最多 {self.max_tags} 个话题标签\n"
+            f"- 最多 {self.max_images} 张配图\n"
+            "- 用提问或犀利观点引发互动"
         )

@@ -6,7 +6,7 @@ import json
 
 from pydantic import BaseModel
 
-from src.agents.base import BaseAgent
+from src.agents.base import BaseAgent, extract_json, extract_json
 from src.agents.reviewer.schemas import ReviewerConfig
 from src.core.state import PlatformContent, ReviewResult
 from src.platforms.base import get_platform
@@ -47,7 +47,7 @@ class ReviewerAgent(BaseAgent):
             response = await self.model.generate(prompt, temperature=cfg.temperature)
 
             try:
-                raw_review = json.loads(response.strip())
+                raw_review = json.loads(extract_json(response))
             except (json.JSONDecodeError, ValueError):
                 raw_review = {"score": 0.0, "issues": ["Failed to parse review"], "suggestions": []}
 

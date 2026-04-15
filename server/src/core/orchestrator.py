@@ -85,7 +85,7 @@ class Orchestrator:
 
         return node_fn
 
-    def build_graph(self, pipeline_config: PipelineConfig) -> StateGraph:
+    def build_graph(self, pipeline_config: PipelineConfig, stage_overrides: dict[str, dict] | None = None) -> StateGraph:
         """Build a LangGraph StateGraph from pipeline config."""
         graph = StateGraph(PipelineState)
 
@@ -94,8 +94,12 @@ class Orchestrator:
             raise ValueError("Pipeline has no stages")
 
         for stage in stages:
+            effective_stage = stage
+            if stage_overrides and stage.agent in stage_overrides:
+                merged_config = {**stage.config, **stage_overrides[stage.agent]}
+                effective_stage = stage.model_copy(update={"config": merged_config})
             agent = self.registry.get(stage.agent)
-            graph.add_node(stage.agent, self._wrap_agent(agent, stage))
+            graph.add_node(stage.agent, self._wrap_agent(agent, effective_stage))
 
         graph.add_edge(START, stages[0].agent)
         for i in range(len(stages) - 1):
@@ -114,10 +118,11 @@ class Orchestrator:
         pipeline_config: PipelineConfig,
         user_brief: UserBrief,
         run_id: str | None = None,
+        stage_overrides: dict[str, dict] | None = None,
     ) -> dict:
         """Build and execute a pipeline."""
         run_id = run_id or uuid.uuid4().hex[:12]
-        graph = self.build_graph(pipeline_config)
+        graph = self.build_graph(pipeline_config, stage_overrides=stage_overrides)
         compiled = graph.compile(checkpointer=self.checkpointer)
 
         initial_state: dict[str, Any] = {

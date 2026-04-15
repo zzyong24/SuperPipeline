@@ -6,7 +6,7 @@ import json
 
 from pydantic import BaseModel
 
-from src.agents.base import BaseAgent
+from src.agents.base import BaseAgent, extract_json, extract_json
 from src.agents.material_collector.schemas import MaterialCollectConfig
 from src.core.state import Material, Topic
 
@@ -31,11 +31,11 @@ class MaterialCollectorAgent(BaseAgent):
         response = await self.model.generate(prompt, temperature=cfg.temperature)
 
         try:
-            raw_materials = json.loads(response.strip())
+            raw_materials = json.loads(extract_json(response))
             if not isinstance(raw_materials, list):
                 raise ValueError("Expected a JSON array")
         except (json.JSONDecodeError, ValueError) as e:
-            raise ValueError(f"Failed to parse materials response: {e}") from e
+            raise ValueError(f"Failed to parse materials response: {e}\nRaw: {response[:500]}") from e
 
         materials = [Material.model_validate(m).model_dump() for m in raw_materials]
         return {"materials": materials}

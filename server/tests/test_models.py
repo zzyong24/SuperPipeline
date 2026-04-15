@@ -8,8 +8,8 @@ def test_create_model_adapter_minimax():
     config = ModelConfig(
         provider="minimax",
         api_key="test-key",
-        base_url="https://api.minimax.chat/v1",
-        model="abab6.5-chat",
+        base_url="https://api.minimaxi.com/anthropic",
+        model="MiniMax-M2.5",
     )
     adapter = create_model_adapter(config)
     assert isinstance(adapter, MiniMaxAdapter)
@@ -26,15 +26,18 @@ async def test_minimax_adapter_generate():
     config = ModelConfig(
         provider="minimax",
         api_key="test-key",
-        base_url="https://api.minimax.chat/v1",
-        model="abab6.5-chat",
+        base_url="https://api.minimaxi.com/anthropic",
+        model="MiniMax-M2.5",
     )
     adapter = MiniMaxAdapter(config)
 
     mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.json.return_value = {
-        "choices": [{"message": {"content": "Hello world"}}]
+        "content": [
+            {"type": "thinking", "thinking": "Let me think..."},
+            {"type": "text", "text": "Hello world"},
+        ]
     }
     mock_response.raise_for_status = MagicMock()
 

@@ -7,6 +7,7 @@ class RunPipelineRequest(BaseModel):
     brief: str
     keywords: list[str] = Field(default_factory=list)
     platform_hints: list[str] = Field(default_factory=list)
+    stage_overrides: dict[str, dict] = Field(default_factory=dict)
 
 class RunPipelineResponse(BaseModel):
     run_id: str

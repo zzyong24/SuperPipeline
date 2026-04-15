@@ -28,19 +28,23 @@ class ModelAdapter(ABC):
 
 
 class MiniMaxAdapter(ModelAdapter):
-    """MiniMax API adapter (OpenAI-compatible chat completions endpoint)."""
+    """MiniMax API adapter (Anthropic-compatible messages endpoint)."""
 
     def __init__(self, config: ModelConfig) -> None:
         super().__init__(config)
         self._client = httpx.AsyncClient(
             base_url=config.base_url,
-            headers={"Authorization": f"Bearer {config.api_key}"},
-            timeout=60.0,
+            headers={
+                "x-api-key": config.api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            timeout=120.0,
         )
 
     async def generate(self, prompt: str, **kwargs) -> str:
         messages = kwargs.get("messages", [{"role": "user", "content": prompt}])
-        payload = {
+        payload: dict = {
             "model": self.config.model,
             "messages": messages,
             "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
@@ -48,20 +52,25 @@ class MiniMaxAdapter(ModelAdapter):
         if "temperature" in kwargs:
             payload["temperature"] = kwargs["temperature"]
 
-        response = await self._client.post("/chat/completions", json=payload)
+        response = await self._client.post("/v1/messages", json=payload)
         response.raise_for_status()
         data = response.json()
-        return data["choices"][0]["message"]["content"]
+        # Anthropic format: content is a list of blocks
+        content_blocks = data.get("content", [])
+        # Extract text blocks, skip thinking blocks
+        text_parts = [b["text"] for b in content_blocks if b.get("type") == "text"]
+        return "\n".join(text_parts)
 
     async def generate_image(self, prompt: str, **kwargs) -> bytes:
-        payload = {
+        # MiniMax image generation uses a separate endpoint
+        payload: dict = {
             "model": self.config.model,
             "prompt": prompt,
         }
         if "size" in kwargs:
             payload["size"] = kwargs["size"]
 
-        response = await self._client.post("/images/generations", json=payload)
+        response = await self._client.post("/v1/images/generations", json=payload)
         response.raise_for_status()
         data = response.json()
         image_url = data["data"][0]["url"]

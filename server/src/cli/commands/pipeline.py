@@ -17,7 +17,7 @@ def _get_pipelines_dir() -> Path:
     env_dir = os.environ.get("SP_PIPELINES_DIR")
     if env_dir:
         return Path(env_dir)
-    return Path(__file__).parent.parent.parent / "pipelines"
+    return Path(__file__).parent.parent.parent.parent / "pipelines"
 
 
 @app.command("list")

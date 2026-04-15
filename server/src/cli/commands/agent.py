@@ -17,8 +17,8 @@ app = typer.Typer(help="Manage agents")
 
 
 def _get_engine() -> Engine:
-    config_path = Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent / "config.yaml"))
-    pipelines_dir = Path(os.environ.get("SP_PIPELINES_DIR", Path(__file__).parent.parent.parent / "pipelines"))
+    config_path = Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent.parent / "config.yaml"))
+    pipelines_dir = Path(os.environ.get("SP_PIPELINES_DIR", Path(__file__).parent.parent.parent.parent / "pipelines"))
     config = load_config(config_path)
     return Engine(config, pipelines_dir)
 

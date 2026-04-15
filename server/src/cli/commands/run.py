@@ -16,14 +16,14 @@ from src.core.state import UserBrief
 
 
 def _get_config_path() -> Path:
-    return Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent / "config.yaml"))
+    return Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent.parent / "config.yaml"))
 
 
 def _get_pipelines_dir() -> Path:
     env_dir = os.environ.get("SP_PIPELINES_DIR")
     if env_dir:
         return Path(env_dir)
-    return Path(__file__).parent.parent.parent / "pipelines"
+    return Path(__file__).parent.parent.parent.parent / "pipelines"
 
 
 def _run_pipeline(pipeline_name: str, brief_text: str) -> dict:

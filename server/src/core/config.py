@@ -7,6 +7,8 @@ import re
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 
 
@@ -59,6 +61,10 @@ def _substitute_env_vars(obj: object) -> object:
 
 def load_config(path: Path) -> AppConfig:
     """Load and validate config from a YAML file."""
+    # Load .env from the same directory as the config file (or project root)
+    env_file = path.parent / ".env"
+    if env_file.exists():
+        load_dotenv(env_file)
     if not path.exists():
         raise FileNotFoundError(f"Config file not found: {path}")
     raw = yaml.safe_load(path.read_text())

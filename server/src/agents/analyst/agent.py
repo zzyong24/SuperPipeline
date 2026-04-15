@@ -6,7 +6,7 @@ import json
 
 from pydantic import BaseModel
 
-from src.agents.base import BaseAgent
+from src.agents.base import BaseAgent, extract_json, extract_json
 from src.agents.analyst.schemas import AnalystConfig
 from src.core.state import Analysis
 
@@ -30,7 +30,7 @@ class AnalystAgent(BaseAgent):
         response = await self.model.generate(prompt, temperature=cfg.temperature)
 
         try:
-            raw_analysis = json.loads(response.strip())
+            raw_analysis = json.loads(extract_json(response))
         except (json.JSONDecodeError, ValueError):
             raw_analysis = {
                 "summary": "Analysis failed to parse",

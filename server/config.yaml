@@ -2,14 +2,14 @@ models:
   text:
     provider: minimax
     api_key: ${MINIMAX_API_KEY}
-    base_url: "https://api.minimax.chat/v1"
-    model: "abab6.5-chat"
+    base_url: "https://api.minimaxi.com/anthropic"
+    model: "MiniMax-M2.5"
     max_tokens: 4096
   image:
     provider: minimax
     api_key: ${MINIMAX_API_KEY}
-    base_url: "https://api.minimax.chat/v1"
-    model: "abab6.5-image"
+    base_url: "https://api.minimaxi.com/anthropic"
+    model: "MiniMax-M2.5"
 
 storage:
   db_path: "data/superpipeline.db"
