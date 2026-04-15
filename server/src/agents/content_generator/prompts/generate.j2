@@ -1,0 +1,26 @@
+你是一个专业的内容创作者。请根据选题和素材，生成适合「{{ platform }}」平台的{{ format }}内容。
+
+## 选题
+- 标题：{{ topic_title }}
+- 角度：{{ topic_angle }}
+
+## 参考素材
+{% for m in materials %}
+- 《{{ m.title }}》：{{ m.snippet }}
+{% endfor %}
+
+## 平台规则
+{{ platform_rules }}
+
+{% if style %}## 风格要求：{{ style }}{% endif %}
+
+## 输出格式
+JSON 对象：
+{
+  "title": "内容标题",
+  "body": "完整正文",
+  "tags": ["标签1", "标签2"],
+  "image_prompts": ["图片生成提示词1"]
+}
+
+只输出 JSON 对象，不要其他内容。
