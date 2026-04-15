@@ -21,8 +21,8 @@ class Engine:
         self.pipelines_dir = pipelines_dir
         self.text_model: ModelAdapter = create_model_adapter(config.models.text)
         self.registry = AgentRegistry()
-        self.orchestrator = Orchestrator(self.registry)
         self.state_store = StateStore(config.storage.db_path)
+        self.orchestrator = Orchestrator(self.registry, state_store=self.state_store)
         self.asset_store = AssetStore(config.storage.assets_dir, config.storage.outputs_dir)
 
     async def initialize(self) -> None:
