@@ -53,6 +53,20 @@ class BaseAgent(ABC):
         """Check that all produced keys are present in outputs."""
         return all(key in outputs for key in self.produces)
 
+    def get_prompt(self, template_name: str, config: BaseModel, **kwargs) -> str:
+        """Get prompt: use override if available, otherwise load from template."""
+        override = getattr(config, '_prompt_override', None)
+        if override:
+            return override
+        return self.load_prompt(template_name, **kwargs)
+
+    def get_prompt(self, template_name: str, config: BaseModel, **kwargs) -> str:
+        """Get prompt: use override if available, otherwise load from template."""
+        override = getattr(config, '_prompt_override', None)
+        if override:
+            return override
+        return self.load_prompt(template_name, **kwargs)
+
     def load_prompt(self, template_name: str, **kwargs) -> str:
         """Load and render a Jinja2 template from this agent's prompts/ dir."""
         if self._jinja_env is None:

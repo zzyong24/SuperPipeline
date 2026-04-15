@@ -21,8 +21,9 @@ class TopicGeneratorAgent(BaseAgent):
         cfg: TopicGenConfig = config
         brief = UserBrief.model_validate(inputs["user_brief"])
 
-        prompt = self.load_prompt(
+        prompt = self.get_prompt(
             "generate.j2",
+            cfg,
             topic=brief.topic,
             keywords=brief.keywords,
             style=cfg.style or brief.style,

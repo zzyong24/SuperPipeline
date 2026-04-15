@@ -21,8 +21,9 @@ class MaterialCollectorAgent(BaseAgent):
         cfg: MaterialCollectConfig = config
         topic = Topic.model_validate(inputs["selected_topic"])
 
-        prompt = self.load_prompt(
+        prompt = self.get_prompt(
             "collect.j2",
+            cfg,
             title=topic.title,
             angle=topic.angle,
             max_items=cfg.max_items,

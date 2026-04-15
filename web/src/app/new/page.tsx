@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api-client";
 import type { Pipeline, PipelineDetail, StageConfig } from "@/lib/types";
@@ -36,6 +36,14 @@ const CONFIG_LABELS: Record<string, string> = {
 };
 
 export default function NewRunPage() {
+  return (
+    <Suspense fallback={<div className="text-sm text-muted-foreground">加载中...</div>}>
+      <NewRunContent />
+    </Suspense>
+  );
+}
+
+function NewRunContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselect = searchParams.get("pipeline") || "";

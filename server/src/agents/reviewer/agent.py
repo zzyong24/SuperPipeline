@@ -34,8 +34,9 @@ class ReviewerAgent(BaseAgent):
                 platform_issues = []
                 platform_rules = ""
 
-            prompt = self.load_prompt(
+            prompt = self.get_prompt(
                 "review.j2",
+                cfg,
                 platform=platform_name,
                 title=content.title,
                 body=content.body,

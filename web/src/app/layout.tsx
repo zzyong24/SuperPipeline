@@ -1,10 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Geist } from "next/font/google";
-import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/layout/Sidebar";
-
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "SuperPipeline",
@@ -13,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh" className={cn("font-sans", geist.variable)} suppressHydrationWarning>
+    <html lang="zh" suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased">
         <Sidebar />
         <main className="ml-60 min-h-screen">

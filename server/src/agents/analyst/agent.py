@@ -20,8 +20,9 @@ class AnalystAgent(BaseAgent):
     async def run(self, inputs: dict, config: BaseModel) -> dict:
         cfg: AnalystConfig = config
 
-        prompt = self.load_prompt(
+        prompt = self.get_prompt(
             "analyze.j2",
+            cfg,
             contents=inputs.get("contents", {}),
             reviews=inputs.get("reviews", {}),
             metrics=cfg.metrics,

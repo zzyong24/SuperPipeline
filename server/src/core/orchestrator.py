@@ -26,6 +26,8 @@ class Orchestrator:
     def _wrap_agent(self, agent: BaseAgent, stage_config: StageConfig, run_id: str | None = None):
         """Wrap an agent into a LangGraph node function with retry, on_error, and snapshot support."""
         config = agent.config_schema.model_validate(stage_config.config)
+        if stage_config.prompt_override:
+            object.__setattr__(config, '_prompt_override', stage_config.prompt_override)
         on_error = stage_config.on_error
         retry_count = stage_config.retry_count
 

@@ -29,8 +29,9 @@ class ContentGeneratorAgent(BaseAgent):
         except ValueError:
             platform_rules = f"Platform: {cfg.platform}"
 
-        prompt = self.load_prompt(
+        prompt = self.get_prompt(
             "generate.j2",
+            cfg,
             platform=cfg.platform,
             format=cfg.format,
             topic_title=topic.title,
