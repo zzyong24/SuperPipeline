@@ -48,6 +48,20 @@ class StateStore:
                 insights_json TEXT DEFAULT '[]',
                 created_at TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS stage_snapshots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                run_id TEXT NOT NULL,
+                agent TEXT NOT NULL,
+                version INTEGER NOT NULL DEFAULT 1,
+                status TEXT NOT NULL,
+                config_json TEXT NOT NULL DEFAULT '{}',
+                inputs_json TEXT NOT NULL DEFAULT '{}',
+                outputs_json TEXT,
+                error TEXT,
+                duration_ms INTEGER,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(run_id, agent, version)
+            );
         """)
         await self._db.commit()
 
@@ -145,6 +159,14 @@ class StateStore:
             results.append(d)
         return results
 
+    def _parse_snapshot_row(self, row) -> dict:
+        d = dict(row)
+        d["config"] = json.loads(d.pop("config_json"))
+        d["inputs"] = json.loads(d.pop("inputs_json"))
+        outputs_raw = d.pop("outputs_json")
+        d["outputs"] = json.loads(outputs_raw) if outputs_raw is not None else None
+        return d
+
     async def update_content(self, content_id: str, **kwargs) -> None:
         updates = []
         params = []
@@ -163,3 +185,78 @@ class StateStore:
             params,
         )
         await self._db.commit()
+
+    # ── Stage Snapshots ───────────────────────────────────────────────
+
+    async def save_snapshot(
+        self, run_id: str, agent: str, version: int, status: str,
+        config: dict, inputs: dict, outputs: dict | None,
+        error: str | None, duration_ms: int | None,
+    ) -> None:
+        await self._db.execute(
+            """INSERT INTO stage_snapshots
+               (run_id, agent, version, status, config_json, inputs_json, outputs_json, error, duration_ms, created_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                run_id, agent, version, status,
+                json.dumps(config, ensure_ascii=False),
+                json.dumps(inputs, ensure_ascii=False),
+                json.dumps(outputs, ensure_ascii=False) if outputs is not None else None,
+                error, duration_ms, self._now(),
+            ),
+        )
+        await self._db.commit()
+
+    async def get_snapshot(self, run_id: str, agent: str, version: int | None = None) -> dict | None:
+        if version is not None:
+            cursor = await self._db.execute(
+                "SELECT * FROM stage_snapshots WHERE run_id = ? AND agent = ? AND version = ?",
+                (run_id, agent, version),
+            )
+        else:
+            cursor = await self._db.execute(
+                "SELECT * FROM stage_snapshots WHERE run_id = ? AND agent = ? ORDER BY version DESC LIMIT 1",
+                (run_id, agent),
+            )
+        row = await cursor.fetchone()
+        if row is None:
+            return None
+        return self._parse_snapshot_row(row)
+
+    async def list_snapshots(self, run_id: str) -> list[dict]:
+        cursor = await self._db.execute(
+            """SELECT s.* FROM stage_snapshots s
+               INNER JOIN (
+                   SELECT run_id, agent, MAX(version) as max_v
+                   FROM stage_snapshots WHERE run_id = ?
+                   GROUP BY run_id, agent
+               ) latest ON s.run_id = latest.run_id AND s.agent = latest.agent AND s.version = latest.max_v
+               ORDER BY s.id""",
+            (run_id,),
+        )
+        rows = await cursor.fetchall()
+        return [self._parse_snapshot_row(r) for r in rows]
+
+    async def list_snapshot_history(self, run_id: str, agent: str) -> list[dict]:
+        cursor = await self._db.execute(
+            "SELECT * FROM stage_snapshots WHERE run_id = ? AND agent = ? ORDER BY version ASC",
+            (run_id, agent),
+        )
+        rows = await cursor.fetchall()
+        return [self._parse_snapshot_row(r) for r in rows]
+
+    async def update_snapshot_outputs(self, run_id: str, agent: str, version: int, outputs: dict) -> None:
+        await self._db.execute(
+            "UPDATE stage_snapshots SET outputs_json = ? WHERE run_id = ? AND agent = ? AND version = ?",
+            (json.dumps(outputs, ensure_ascii=False), run_id, agent, version),
+        )
+        await self._db.commit()
+
+    async def get_next_version(self, run_id: str, agent: str) -> int:
+        cursor = await self._db.execute(
+            "SELECT MAX(version) FROM stage_snapshots WHERE run_id = ? AND agent = ?",
+            (run_id, agent),
+        )
+        row = await cursor.fetchone()
+        max_v = row[0] if row and row[0] is not None else 0
+        return max_v + 1
