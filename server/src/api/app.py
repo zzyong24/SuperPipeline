@@ -2,7 +2,7 @@
 from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.api.routes import pipelines, contents, runs
+from src.api.routes import pipelines, contents, runs, stages
 from src.api import sse
 
 def create_app() -> FastAPI:
@@ -21,6 +21,7 @@ def create_app() -> FastAPI:
     app.include_router(pipelines.router)
     app.include_router(contents.router)
     app.include_router(runs.router)
+    app.include_router(stages.router)
     app.include_router(sse.router)
 
     @app.get("/health")

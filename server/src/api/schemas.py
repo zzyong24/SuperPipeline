@@ -15,3 +15,21 @@ class RunPipelineResponse(BaseModel):
 
 class ApproveRequest(BaseModel):
     publish_url: str = ""
+
+class EditSnapshotRequest(BaseModel):
+    outputs: dict
+
+class RerunStageRequest(BaseModel):
+    config: dict = Field(default_factory=dict)
+    model: str | None = None
+    prompt: str | None = None
+    only: bool = False
+
+class EditSnapshotRequest(BaseModel):
+    outputs: dict
+
+class RerunStageRequest(BaseModel):
+    config: dict = Field(default_factory=dict)
+    model: str | None = None
+    prompt: str | None = None
+    only: bool = False
