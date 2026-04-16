@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/contents", tags=["contents"])
 def _get_store() -> StateStore:
     config_path = Path(os.environ.get("SP_CONFIG", Path(__file__).parent.parent.parent.parent / "config.yaml"))
     config = load_config(config_path)
-    return StateStore(config.storage.db_path)
+    return StateStore(config.storage.database_url)
 
 async def _list_contents(status: str | None = None, run_id: str | None = None) -> list[dict]:
     store = _get_store()

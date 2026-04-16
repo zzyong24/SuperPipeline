@@ -24,7 +24,7 @@ def _get_pipelines_dir() -> Path:
 
 def _get_store() -> StateStore:
     config = load_config(_get_config_path())
-    return StateStore(config.storage.db_path)
+    return StateStore(config.storage.database_url)
 
 async def _list_runs(limit: int = 20, status: str | None = None) -> list[dict]:
     store = _get_store()

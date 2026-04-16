@@ -26,7 +26,7 @@ class ModelsConfig(BaseModel):
 
 
 class StorageConfig(BaseModel):
-    db_path: str = "data/superpipeline.db"
+    database_url: str = "postgresql://superpipeline:sp2026secure@127.0.0.1:5432/superpipeline"
     assets_dir: str = "data/assets"
     outputs_dir: str = "data/outputs"
 
