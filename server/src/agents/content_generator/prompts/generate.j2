@@ -4,23 +4,67 @@
 - 标题：{{ topic_title }}
 - 角度：{{ topic_angle }}
 
+{% if doc_synth_summary %}
+## 文档深度分析摘要
+{{ doc_synth_summary }}
+{% endif %}
+
 ## 参考素材
 {% for m in materials %}
 - 《{{ m.title }}》：{{ m.snippet }}
 {% endfor %}
+
+{% if extracted_images %}
+## 文档配图（可用作文章配图，优先使用）
+{% for img in extracted_images %}
+- [图片] {{ img.caption }}
+  路径：{{ img.image_path }}
+{% endfor %}
+{% endif %}
 
 ## 平台规则
 {{ platform_rules }}
 
 {% if style %}## 风格要求：{{ style }}{% endif %}
 
+{% if previous_review_issues %}
+## 上一次审核发现的问题（必须全部纠正，禁止再犯）
+
+{% for issue in previous_review_issues %}
+- {{ issue }}
+{% endfor %}
+
+**这是自纠正循环的第 {{ review_iteration }} 次。**
+以上问题必须在本次内容中彻底解决，不能只做表面修改。每条问题都要有对应的实质性改动。
+{% endif %}
+
 ## 输出格式
 JSON 对象：
+```json
 {
   "title": "内容标题",
-  "body": "完整正文",
+  "body": "完整正文，抖音平台要求 2000 字以上，充分利用素材中的具体事实、时间戳、代码对比细节",
   "tags": ["标签1", "标签2"],
-  "image_prompts": ["图片生成提示词1"]
+  "image_prompts": ["图片生成提示词（仅当确实需要AI生成图片时）"],
+  "inline_images": [
+    {
+      "skill_name": "architecture-diagram",
+      "prompt": "生成一张架构对比图：展示Evolver和Hermes Agent的核心模块对应关系",
+      "caption": "Evolver与Hermes Agent核心架构对比",
+      "context": "正文第一节架构对比处"
+    }
+  ]
 }
+```
+
+关键要求：
+- body 要达到 2000 字以上（抖音硬性要求），充分利用素材中的具体事实：GitHub 时间戳、代码结构对比、术语对照表等
+- **禁止使用 emoji 表情包、❌✅⚠️💥🔥 等特殊符号**，内容要像真人写的，不要像 AI 批量生成
+- 内容分段要自然，用自然换行分隔，不要用符号装饰
+- inline_images 是可选项，只有当你确实需要用图表来增强表达时才生成
+- 不要编造任何不在素材中的事实
+{% if previous_review_issues %}
+- **重点**：本次必须解决上一次审核指出的所有问题
+{% endif %}
 
 只输出 JSON 对象，不要其他内容。

@@ -78,6 +78,36 @@ class MiniMaxAdapter(ModelAdapter):
         img_response.raise_for_status()
         return img_response.content
 
+    async def generate_image_caption(self, image_path: str, prompt: str = "") -> str:
+        """Use MiniMax vision API to caption an image."""
+        import base64
+        from pathlib import Path
+
+        img_bytes = Path(image_path).read_bytes()
+        b64 = base64.b64encode(img_bytes).decode("utf-8")
+        ext = Path(image_path).suffix.lower().lstrip(".")
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}.get(ext, "image/jpeg")
+
+        payload = {
+            "model": self.config.model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "image_url", "image_url": f"data:{mime};base64,{b64}"},
+                        {"type": "text", "text": prompt or "描述这张图片的内容，用于文章配图。简短50字以内。"},
+                    ],
+                }
+            ],
+            "max_tokens": 200,
+        }
+        response = await self._client.post("/v1/messages", json=payload)
+        response.raise_for_status()
+        data = response.json()
+        content_blocks = data.get("content", [])
+        text_parts = [b["text"] for b in content_blocks if b.get("type") == "text"]
+        return "\n".join(text_parts)
+
     async def close(self) -> None:
         await self._client.aclose()
 

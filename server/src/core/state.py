@@ -10,6 +10,42 @@ from pydantic import BaseModel, Field
 # ── Pydantic models (validated data objects) ─────────────────────────
 
 
+class SourceDocument(BaseModel):
+    """A source document provided by the user as input."""
+
+    file_path: str = Field(description="Absolute path to the document file")
+    title: str = Field(default="", description="Document title or filename")
+    content: str = Field(default="", description="Full text content")
+    extracted_images: list["ExtractedImage"] = Field(default_factory=list)
+
+
+class ExtractedImage(BaseModel):
+    """An image extracted from a source document."""
+
+    image_path: str = Field(description="Local file path to the image")
+    source_doc_path: str = Field(description="Which document this image came from")
+    caption: str = Field(default="", description="Vision-generated caption")
+    page_anchor: str = Field(default="", description="Page/slide/position hint")
+
+
+class InlineImageSpec(BaseModel):
+    """Specification for an image to be generated via skill during post-processing."""
+
+    skill_name: str = Field(description="Which skill to invoke: architecture-diagram | obsidian-canvas | excalidraw-diagram | minimax-image")
+    prompt: str = Field(description="The prompt/definition for the skill")
+    caption: str = Field(default="", description="Caption for the image")
+    context: str = Field(default="", description="Where in the article this image appears")
+    output_path: str = Field(default="", description="Set by post_processor after generation")
+
+
+class ImageSource(BaseModel):
+    """Tracks the source of an image used in content."""
+
+    image_path: str = Field(description="Path to the image")
+    source_type: str = Field(description="real_document | extracted | skill_screenshot | ai_generated")
+    source_detail: str = Field(default="", description="e.g. skill name, document path, or prompt used")
+
+
 class UserBrief(BaseModel):
     """User input that kicks off a pipeline run."""
 
@@ -18,6 +54,7 @@ class UserBrief(BaseModel):
     platform_hints: list[str] = Field(default_factory=list, description="Target platforms")
     style: str = Field(default="", description="Content style hint")
     extra: dict = Field(default_factory=dict, description="Arbitrary extra params")
+    source_documents: list[SourceDocument] = Field(default_factory=list, description="User-provided source documents")
 
 
 class Topic(BaseModel):
@@ -35,7 +72,7 @@ class Material(BaseModel):
     source: str = Field(description="URL or file path")
     title: str = Field(default="")
     snippet: str = Field(default="", description="Relevant excerpt")
-    source_type: str = Field(default="web", description="web | local_kb | manual")
+    source_type: str = Field(default="web", description="web | local_kb | manual | document")
 
 
 class PlatformContent(BaseModel):
@@ -47,6 +84,8 @@ class PlatformContent(BaseModel):
     tags: list[str] = Field(default_factory=list)
     image_paths: list[str] = Field(default_factory=list)
     image_prompts: list[str] = Field(default_factory=list, description="Prompts used for image gen")
+    image_sources: list[dict] = Field(default_factory=list, description="ImageSource dicts tracking each image's origin")
+    inline_images: list[dict] = Field(default_factory=list, description="InlineImageSpec specs for post-processor to generate")
 
 
 class ReviewResult(BaseModel):
@@ -116,11 +155,23 @@ class PipelineState(TypedDict, total=False):
     topics: list[dict]  # serialized list[Topic]
     selected_topic: dict  # serialized Topic
 
+    # Document processing stages
+    source_documents: list[dict]  # serialized list[SourceDocument]
+    document_synthesizer_output: dict  # serialized DocumentSynthesizerOutput
+    extracted_images: list[dict]  # serialized list[ExtractedImage]
+
     # Material stage
     materials: list[dict]  # serialized list[Material]
 
     # Generation stage (keyed by platform name)
     contents: dict[str, dict]  # {platform: serialized PlatformContent}
+
+    # Review loop state
+    review_iteration: int          # current iteration count (0 = initial)
+    previous_review_issues: list[str]  # issues from previous review pass (for content_generator correction)
+
+    # Post-processing stage
+    inline_images: list[dict]  # serialized list[InlineImageSpec]
 
     # Review stage
     reviews: dict[str, dict]  # {platform: serialized ReviewResult}

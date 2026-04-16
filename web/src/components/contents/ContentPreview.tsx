@@ -20,6 +20,7 @@ interface ContentPreviewProps {
 }
 
 export function ContentPreview({ content, onClick }: ContentPreviewProps) {
+  const firstPath = content.image_paths?.[0];
   const firstPrompt = content.image_prompts?.[0];
 
   function handleCopy(e: React.MouseEvent) {
@@ -32,7 +33,7 @@ export function ContentPreview({ content, onClick }: ContentPreviewProps) {
       className="cursor-pointer hover:shadow-sm transition-shadow overflow-hidden"
       onClick={onClick}
     >
-      <ImagePlaceholder prompt={firstPrompt} />
+      <ImagePlaceholder src={firstPath} prompt={firstPrompt} />
       <CardContent className="p-4 space-y-2">
         <h3 className="font-medium text-sm leading-tight line-clamp-2">
           {content.title}

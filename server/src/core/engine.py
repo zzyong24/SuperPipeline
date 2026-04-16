@@ -36,8 +36,15 @@ class Engine:
         from src.agents.content_generator import ContentGeneratorAgent
         from src.agents.reviewer import ReviewerAgent
         from src.agents.analyst import AnalystAgent
+        from src.agents.document_synthesizer import DocumentSynthesizerAgent
+        from src.agents.image_extractor import ImageExtractorAgent
+        from src.agents.post_processor import PostProcessorAgent
 
-        for agent_cls in [TopicGeneratorAgent, MaterialCollectorAgent, ContentGeneratorAgent, ReviewerAgent, AnalystAgent]:
+        for agent_cls in [
+            TopicGeneratorAgent, MaterialCollectorAgent, ContentGeneratorAgent,
+            ReviewerAgent, AnalystAgent, DocumentSynthesizerAgent,
+            ImageExtractorAgent, PostProcessorAgent,
+        ]:
             self.registry.register(agent_cls, model=self.text_model)
 
     def load_pipeline(self, name: str) -> PipelineConfig:

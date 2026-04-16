@@ -1,0 +1,41 @@
+你是一个文档深度理解专家。用户提供了 {{ documents|length }} 篇源文档，请进行深度分析并输出结构化结果。
+
+## 文档列表
+{% for doc in documents %}
+### 文档 {{ loop.index }}: {{ doc.title }}
+- 路径: {{ doc.file_path }}
+- 内容:
+{{ doc.content }}
+---
+{% endfor %}
+
+## 你的任务
+
+请对以上文档进行深度理解，输出一个 JSON 对象，包含以下字段：
+
+```json
+{
+  "summary": "整体摘要，200字内",
+  "knowledge_points": [
+    {
+      "title": "知识点标题",
+      "content": "知识点详细说明",
+      "source_doc": "来源文档标题",
+      "importance": 0.0-1.0
+    }
+  ],
+  "cross_references": [
+    {
+      "doc_a": "文档A标题",
+      "doc_b": "文档B标题",
+      "relationship": "两文档之间的关系描述"
+    }
+  ],
+  "topic_extensions": ["延伸主题1", "延伸主题2"]
+}
+```
+
+请确保：
+1. knowledge_points 从文档内容中提取真实知识点，不要编造
+2. cross_references 标注文档间的关联（如同一事件的不同角度、互相印证、互相矛盾等）
+3. topic_extensions 基于文档内容自然延伸，不超过5个

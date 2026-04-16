@@ -1,5 +1,5 @@
 name: "抖音图文"
-description: "生成抖音种草图文/短视频脚本"
+description: "生成抖音种草图文/短视频脚本 — 支持源文档输入和多源图片策略"
 platforms: ["douyin"]
 
 stages:
@@ -7,6 +7,14 @@ stages:
     config:
       style: "种草"
       count: 5
+
+  - agent: document_synthesizer
+    config:
+      temperature: 0.3
+
+  - agent: image_extractor
+    config:
+      max_images: 20
 
   - agent: material_collector
     config:
@@ -17,6 +25,11 @@ stages:
     config:
       platform: douyin
       format: image_text
+
+  - agent: post_processor
+    config:
+      output_dir: outputs
+      on_error: skip
 
   - agent: reviewer
     config:

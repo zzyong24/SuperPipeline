@@ -36,6 +36,22 @@ async def get_content(content_id: str):
         raise HTTPException(status_code=404, detail=f"Content '{content_id}' not found")
     return content
 
+@router.patch("/{content_id}")
+async def update_content(content_id: str, body: dict):
+    store = _get_store()
+    await store.initialize()
+    content = await store.get_content(content_id)
+    if content is None:
+        await store.close()
+        raise HTTPException(status_code=404, detail=f"Content '{content_id}' not found")
+    updates = {k: v for k, v in body.items() if k in ("tags", "image_paths", "status", "publish_url")}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
+    await store.update_content(content_id, **updates)
+    await store.close()
+    return {"message": "Content updated", "content_id": content_id}
+
+
 @router.post("/{content_id}/approve")
 async def approve_content(content_id: str, body: ApproveRequest):
     store = _get_store()

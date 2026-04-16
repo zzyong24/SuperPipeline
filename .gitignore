@@ -10,3 +10,10 @@ dist/
 .pytest_cache/
 node_modules/
 .next/
+
+# SuperPipeline outputs
+outputs/
+server/graphify-out/
+server/src/graphify-out/
+*.log
+trace_*.json

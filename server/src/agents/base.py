@@ -44,6 +44,7 @@ class BaseAgent(ABC):
 
     def validate_inputs(self, state: dict) -> bool:
         """Check that all consumed keys exist and are not None in state."""
+        # All keys in consumes must be present and non-None
         return all(
             key in state and state[key] is not None
             for key in self.consumes
@@ -52,13 +53,6 @@ class BaseAgent(ABC):
     def validate_outputs(self, outputs: dict) -> bool:
         """Check that all produced keys are present in outputs."""
         return all(key in outputs for key in self.produces)
-
-    def get_prompt(self, template_name: str, config: BaseModel, **kwargs) -> str:
-        """Get prompt: use override if available, otherwise load from template."""
-        override = getattr(config, '_prompt_override', None)
-        if override:
-            return override
-        return self.load_prompt(template_name, **kwargs)
 
     def get_prompt(self, template_name: str, config: BaseModel, **kwargs) -> str:
         """Get prompt: use override if available, otherwise load from template."""
