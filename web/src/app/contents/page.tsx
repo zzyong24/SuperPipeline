@@ -28,7 +28,7 @@ export default function ContentsPage() {
     api
       .listContents(params)
       .then(setContents)
-      .catch(() => {})
+      .catch((err) => console.error("[ContentsPage] Failed to fetch:", err))
       .finally(() => setLoading(false));
   }, [filter]);
 

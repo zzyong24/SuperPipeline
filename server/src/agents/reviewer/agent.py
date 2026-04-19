@@ -3,13 +3,48 @@
 from __future__ import annotations
 
 import json
+import re
 
 from pydantic import BaseModel
 
 from src.agents.base import BaseAgent, extract_json
 from src.agents.reviewer.schemas import ReviewerConfig
-from src.core.state import PlatformContent, ReviewResult
+from src.core.state import PlatformContent, ReviewResult, ReviewFailure
 from src.platforms.base import get_platform
+
+# Repair strategy mapping for auto-retry hints
+REPAIR_STRATEGY = {
+    "body_min_length": {
+        "field": "body",
+        "action": "expand",
+        "hint": "正文少于最低要求，请扩充内容，增加案例或分析深度",
+    },
+    "body_too_long": {
+        "field": "body",
+        "action": "compress",
+        "hint": "正文超过上限，请删除冗余内容",
+    },
+    "images_insufficient": {
+        "field": "image_paths",
+        "action": "add",
+        "hint": "配图不足，请从 source_images 补充或生成 AI 图片",
+    },
+    "images_excessive": {
+        "field": "image_paths",
+        "action": "remove",
+        "hint": "配图过多，请删除部分图片",
+    },
+    "has_emoji": {
+        "field": "body",
+        "action": "replace",
+        "hint": "检测到 emoji 表情符号，请替换为文字（如 ✓ → 可以）",
+    },
+    "tags_excessive": {
+        "field": "tags",
+        "action": "truncate",
+        "hint": "标签超过 20 个上限，请精简到 20 个以内",
+    },
+}
 
 
 class ReviewerAgent(BaseAgent):
@@ -98,3 +133,20 @@ class ReviewerAgent(BaseAgent):
             "review_iteration": next_iteration,
             "previous_review_issues": all_hard_issues,
         }
+
+    def _build_retry_hint(self, result: ReviewResult) -> str:
+        """Build a human-readable retry hint from a ReviewResult's failures."""
+        hints = []
+        for failure in result.failures:
+            strategy = REPAIR_STRATEGY.get(failure.rule, {})
+            if strategy:
+                hints.append(f"- {strategy['hint']} (当前: {failure.current}, 期望: {failure.expected})")
+            else:
+                hints.append(f"- {failure.message}")
+        if not hints:
+            return ""
+        return "\n".join([
+            "你生成的内容在审核时被检测到以下问题，请针对性修改：",
+            *hints,
+            "请基于以上反馈重新生成内容，只修改有问题的部分，其他保持不变。",
+        ])

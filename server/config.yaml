@@ -1,18 +1,18 @@
 models:
   text:
     provider: minimax
-    api_key: ${MINIMAX_API_KEY}
+    api_key: ${MINIMAX_CN_API_KEY}
     base_url: "https://api.minimaxi.com/anthropic"
     model: "MiniMax-M2.5"
     max_tokens: 4096
   image:
     provider: minimax
-    api_key: ${MINIMAX_API_KEY}
+    api_key: ${MINIMAX_CN_API_KEY}
     base_url: "https://api.minimaxi.com/anthropic"
     model: "MiniMax-M2.5"
 
 storage:
-  db_path: "data/superpipeline.db"
+  database_url: "postgresql://superpipeline:SuperPipeline2024!@127.0.0.1:5432/superpipeline"
   assets_dir: "data/assets"
   outputs_dir: "data/outputs"
 

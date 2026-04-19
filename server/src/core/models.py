@@ -35,7 +35,7 @@ class MiniMaxAdapter(ModelAdapter):
         self._client = httpx.AsyncClient(
             base_url=config.base_url,
             headers={
-                "x-api-key": config.api_key,
+                "Authorization": f"Bearer {config.api_key}",
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             },

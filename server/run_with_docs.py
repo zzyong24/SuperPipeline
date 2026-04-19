@@ -43,10 +43,10 @@ async def main():
 
     # Build brief with source_documents
     brief = UserBrief(
-        topic="Hermes Agent 与 Evolver 架构相似度分析",
-        keywords=["Hermes Agent", "Evolver", "self-evolution", "EvoMap", "plagiarism"],
-        platform_hints=["douyin"],
-        style="信息转述，客观中立，不表达观点",
+        topic="Hermes Agent 云服务器 Docker 部署教程",
+        keywords=["Hermes Agent", "Docker", "云服务器", "部署教程", "安装配置"],
+        platform_hints=["知乎", "公众号", "B站"],
+        style="技术教程，步骤清晰，适合跟着操作",
         source_documents=[doc],
     )
 
@@ -57,7 +57,7 @@ async def main():
 
     run_id = uuid.uuid4().hex[:12]
     try:
-        result = await engine.run_pipeline("douyin_image_text", brief)
+        result = await engine.run_pipeline("hermes_docker_deploy", brief)
         print(f"\nPipeline completed!")
         print(f"Run ID: {run_id}")
         print(f"Final stage: {result.get('stage')}")

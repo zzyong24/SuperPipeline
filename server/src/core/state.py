@@ -88,6 +88,15 @@ class PlatformContent(BaseModel):
     inline_images: list[dict] = Field(default_factory=list, description="InlineImageSpec specs for post-processor to generate")
 
 
+class ReviewFailure(BaseModel):
+    """A single review failure with rule, current value, and expected value."""
+
+    rule: str = Field(description="Rule identifier (e.g. body_min_length, has_emoji)")
+    message: str = Field(default="", description="Human-readable failure message")
+    current: str = Field(default="", description="Current value that failed")
+    expected: str = Field(default="", description="Expected value")
+
+
 class ReviewResult(BaseModel):
     """Review outcome for a piece of content."""
 
@@ -96,6 +105,9 @@ class ReviewResult(BaseModel):
     score: float = Field(default=0.0, description="Quality score 0-10")
     issues: list[str] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
+    failures: list[ReviewFailure] = Field(default_factory=list, description="Structured failures for auto-retry")
+    retryable: bool = Field(default=False, description="Whether this failure can be retried automatically")
+    retry_hint: str = Field(default="", description="Hint for content_generator on how to fix failures")
 
 
 class Analysis(BaseModel):

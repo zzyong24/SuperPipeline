@@ -1,0 +1,42 @@
+name: "Hermes Agent 云服务器 Docker 部署教程"
+description: "生成 Docker 部署教程类内容，适合知乎/公众号/B站教程视频"
+platforms: ["zhihu", "wechat", "bilibili"]
+
+stages:
+  - agent: topic_generator
+    config:
+      topic: "Hermes Agent 部署"
+      style: "技术教程"
+      count: 5
+
+  - agent: document_synthesizer
+    config:
+      temperature: 0.3
+
+  - agent: image_extractor
+    config:
+      max_images: 10
+
+  - agent: material_collector
+    config:
+      sources: ["web"]
+      max_items: 8
+
+  - agent: content_generator
+    config:
+      platform: bilibili
+      format: article
+
+  - agent: post_processor
+    config:
+      output_dir: outputs
+      on_error: skip
+
+  - agent: reviewer
+    config:
+      rules: ["platform_compliance", "quality_score"]
+      min_score: 7.0
+
+  - agent: analyst
+    config:
+      metrics: ["engagement", "reach"]

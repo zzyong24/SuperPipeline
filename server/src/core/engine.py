@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import time
 import uuid
+from datetime import datetime, timezone
 from pathlib import Path
 
 from src.core.config import AppConfig
 from src.core.models import create_model_adapter, ModelAdapter
 from src.core.orchestrator import Orchestrator
 from src.core.pipeline_loader import load_pipeline
+from src.core.progress_logger import ProgressLogger
 from src.core.registry import AgentRegistry
 from src.core.state import PipelineConfig, UserBrief
 from src.storage.state_store import StateStore
@@ -51,13 +54,44 @@ class Engine:
         yaml_file = self.pipelines_dir / f"{name}.yaml"
         return load_pipeline(yaml_file)
 
+    def _get_outputs_dir(self) -> Path:
+        """Get the outputs directory base path from config."""
+        # Use relative path from the server directory
+        server_dir = Path(__file__).parent.parent.parent
+        return server_dir / "outputs"
+
+    def _write_task_file(self, run_id: str, data: dict) -> None:
+        """Write task.json file for a run."""
+        task_file = self._get_outputs_dir() / run_id / "task.json"
+        task_file.parent.mkdir(parents=True, exist_ok=True)
+        task_file.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
+    def _update_task_status(self, run_id: str, status: str) -> None:
+        """Update the status field in task.json."""
+        task_file = self._get_outputs_dir() / run_id / "task.json"
+        if task_file.exists():
+            data = json.loads(task_file.read_text())
+            data["status"] = status
+            data["updated_at"] = datetime.now(timezone.utc).isoformat()
+            task_file.write_text(json.dumps(data, ensure_ascii=False, indent=2))
+
     async def run_pipeline(self, pipeline_name: str, brief: UserBrief) -> dict:
         pipeline_config = self.load_pipeline(pipeline_name)
         run_id = uuid.uuid4().hex[:12]
         await self.state_store.save_run(run_id, pipeline_name, "running", {})
 
+        # Create task.json with initial status
+        self._write_task_file(run_id, {
+            "task_id": run_id,
+            "pipeline_name": pipeline_name,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "user_brief": brief.model_dump(),
+            "status": "running",
+        })
+
         try:
-            result = await self.orchestrator.run(pipeline_config, brief, run_id=run_id)
+            progress_logger = ProgressLogger(run_id=run_id, output_dir=str(self._get_outputs_dir()))
+            result = await self.orchestrator.run(pipeline_config, brief, run_id=run_id, progress_logger=progress_logger)
 
             for platform, content_data in result.get("contents", {}).items():
                 content_id = f"{run_id}-{platform}"
@@ -71,10 +105,12 @@ class Engine:
                 )
 
             await self.state_store.update_run(run_id, status=result.get("stage", "completed"), state=result)
+            self._update_task_status(run_id, result.get("stage", "completed"))
             return {"run_id": run_id, "status": result.get("stage", "completed"), **result}
 
         except Exception as e:
             await self.state_store.update_run(run_id, status="failed", state={"error": str(e)})
+            self._update_task_status(run_id, "failed")
             return {"run_id": run_id, "status": "failed", "error": str(e)}
 
     async def rerun_from_stage(

@@ -11,6 +11,7 @@ from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
 from src.agents.base import BaseAgent
+from src.core.progress_logger import ProgressLogger
 from src.core.registry import AgentRegistry
 from src.core.state import PipelineConfig, PipelineState, StageConfig, UserBrief
 
@@ -18,10 +19,53 @@ from src.core.state import PipelineConfig, PipelineState, StageConfig, UserBrief
 class Orchestrator:
     """Reads pipeline config, assembles a LangGraph StateGraph, and runs it."""
 
-    def __init__(self, registry: AgentRegistry, state_store=None) -> None:
+    def __init__(self, registry: AgentRegistry, state_store=None, progress_logger: ProgressLogger | None = None) -> None:
         self.registry = registry
         self.state_store = state_store
         self.checkpointer = MemorySaver()
+        self.progress_logger = progress_logger
+
+    def _invoke_agent(
+        self,
+        agent: BaseAgent,
+        inputs: dict[str, Any],
+        config: Any,
+        run_id: str | None = None,
+        attempt: int = 1,
+    ) -> tuple[dict[str, Any] | None, str | None]:
+        """Invoke an agent synchronously and return (outputs, error).
+
+        Returns:
+            (outputs, error_str) — exactly one is non-None.
+        """
+        try:
+            outputs = agent.run(inputs, config)
+            if asyncio.iscoroutine(outputs):
+                # Run the coroutine in the existing event loop
+                loop = asyncio.get_running_loop()
+                outputs = loop.run_until_complete(outputs)
+            return outputs, None
+        except Exception as e:
+            return None, str(e)
+
+    def _should_skip_stage(self, stage: StageConfig, state: dict) -> bool:
+        """判断是否跳过当前 stage（Edge Node 条件分支）"""
+        agent_name = stage.agent
+
+        if agent_name == "document_synthesizer":
+            if not state.get("source_documents"):
+                return True
+
+        if agent_name == "material_collector":
+            materials = state.get("synthesized_materials", [])
+            if materials and len(materials) >= 5:
+                return True
+
+        if agent_name == "image_extractor":
+            if not state.get("source_documents"):
+                return True
+
+        return False
 
     def _wrap_agent(self, agent: BaseAgent, stage_config: StageConfig, run_id: str | None = None):
         """Wrap an agent into a LangGraph node function with retry, on_error, and snapshot support."""
@@ -57,6 +101,12 @@ class Orchestrator:
         async def node_fn(state: PipelineState) -> dict:
             updates: dict[str, Any] = {"stage": agent.name}
 
+            # Edge Node: 条件跳过
+            if self._should_skip_stage(stage_config, state):
+                if self.progress_logger:
+                    self.progress_logger.skip_stage(agent.name)
+                return {"stage": agent.name}
+
             # Debug: print inputs for key agents
             if agent.name in ("reviewer", "content_generator", "post_processor"):
                 print(f"[DEBUG node_fn {agent.name}] inputs keys={list(state.keys())}", flush=True)
@@ -90,7 +140,13 @@ class Orchestrator:
             start_time = time.monotonic()
             last_exception = None
             for attempt in range(max(1, retry_count)):
+                _pl = self.progress_logger
+                _stage_entered = False
                 try:
+                    if _pl:
+                        _pl.start_stage(agent.name, attempt=attempt + 1)
+                        _stage_entered = True
+
                     outputs = await agent.run(inputs, config)
                     if not agent.validate_outputs(outputs):
                         raise ValueError(f"Agent did not produce required outputs: {agent.produces}")
@@ -104,9 +160,13 @@ class Orchestrator:
 
                     elapsed = int((time.monotonic() - start_time) * 1000)
                     await _save_snapshot(inputs, outputs, "completed", None, elapsed)
+                    if _pl:
+                        _pl.complete_stage(agent.name)
                     return updates
                 except Exception as e:
                     last_exception = e
+                    if _pl and _stage_entered:
+                        _pl.complete_stage(agent.name, error=str(e))
                     if attempt < retry_count - 1:
                         await asyncio.sleep(1.0 * (attempt + 1))
 
@@ -227,9 +287,12 @@ class Orchestrator:
         user_brief: UserBrief,
         run_id: str | None = None,
         stage_overrides: dict[str, dict] | None = None,
+        progress_logger: ProgressLogger | None = None,
     ) -> dict:
         """Build and execute a pipeline."""
         run_id = run_id or uuid.uuid4().hex[:12]
+        if progress_logger:
+            self.progress_logger = progress_logger
         graph = self.build_graph(pipeline_config, stage_overrides=stage_overrides, run_id=run_id)
         compiled = graph.compile(checkpointer=self.checkpointer)
 
@@ -255,9 +318,15 @@ class Orchestrator:
         }
 
         config = {"configurable": {"thread_id": run_id}}
+        if self.progress_logger:
+            self.progress_logger.start()
+
         result = await compiled.ainvoke(initial_state, config=config)
 
         if result.get("stage") != "failed":
             result["stage"] = "completed"
+
+        if self.progress_logger:
+            self.progress_logger.complete(success=result.get("stage") == "completed")
 
         return result
