@@ -1,0 +1,20 @@
+{
+  "sprint_id": "sprint_20260421_3",
+  "created_at": "2026-04-21T02:30:00Z",
+  "created_by": "hermes",
+  "generator_contract": "完成 f003 的全部 acceptance criteria，使 SuperPipeline 内容结构符合抖音爆款规律",
+  "features": ["f003"],
+  "evaluator_criteria": {
+    "pass": "所有 acceptance 测试通过，prompt 增强已生效，标签策略已实现",
+    "retry": "有 acceptance 未通过但明确可修复",
+    "fail": "方向性错误或阻塞，需重新规划"
+  },
+  "human_checkpoint": false,
+  "max_iterations": 2,
+  "iteration_history": [],
+  "sprint_goal": "让内容结构化产出，标签智能生成",
+  "out_of_scope": [
+    "不实现复杂的标签推荐算法（那是后续阶段）",
+    "不修改审核逻辑（那是 f002 范围）"
+  ]
+}
