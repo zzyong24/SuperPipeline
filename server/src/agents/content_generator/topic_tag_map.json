@@ -1,0 +1,67 @@
+{
+  "_comment": "话题类型 -> 标签策略映射表，用于内容生成时的标签优化",
+  "topic_tag_strategies": {
+    "AI编程工具对比": {
+      "topic_key": "AI编程工具对比",
+      "core_tags": ["AI编程", "Cursor", "Copilot", "ClaudeCode", "编程工具"],
+      "hot_tags": ["效率神器", "开发者必备", "2024必学"],
+      "audience_tags": ["程序员", "开发者", "AI爱好者"],
+      "hashtag_style": "#AI编程 #效率神器 #开发者工具 #Cursor #Copilot #ClaudeCode"
+    },
+    "大模型应用": {
+      "topic_key": "大模型应用",
+      "core_tags": ["大模型", "LLM", "AI应用", "GPT", "Claude"],
+      "hot_tags": ["AI革命", "生产力", "效率提升"],
+      "audience_tags": ["AI爱好者", "科技从业者", "企业用户"],
+      "hashtag_style": "#大模型 #AI应用 #GPT #LLM #人工智能 #效率工具"
+    },
+    "编程教程": {
+      "topic_key": "编程教程",
+      "core_tags": ["编程", "教程", "Python", "JavaScript", "代码"],
+      "hot_tags": ["零基础", "入门到精通", "实战项目"],
+      "audience_tags": ["编程新手", "学生", "转行者"],
+      "hashtag_style": "#编程教程 #Python #零基础入门 #代码学习 #编程入门"
+    },
+    "科技趋势": {
+      "topic_key": "科技趋势",
+      "core_tags": ["科技", "趋势", "未来", "技术革命"],
+      "hot_tags": ["2024预测", "风口", "红利期"],
+      "audience_tags": ["科技爱好者", "投资人", "创业者"],
+      "hashtag_style": "#科技趋势 #未来科技 #技术革命 #2024 #科技创新"
+    },
+    "工具测评": {
+      "topic_key": "工具测评",
+      "core_tags": ["测评", "工具", "对比", "横评", "工具推荐"],
+      "hot_tags": ["真实体验", "避坑指南", "必看"],
+      "audience_tags": ["工具控", "效率追求者", "数码爱好者"],
+      "hashtag_style": "#工具测评 #效率工具 #APP推荐 #神器推荐 #测评对比"
+    },
+    "职场发展": {
+      "topic_key": "职场发展",
+      "core_tags": ["职场", "职业发展", "加薪", "晋升"],
+      "hot_tags": ["职场干货", "打工人", "成长经验"],
+      "audience_tags": ["职场人", "打工人", "管理者"],
+      "hashtag_style": "#职场发展 #打工人 #职业成长 #职场干货 #晋升技巧"
+    },
+    "产品分析": {
+      "topic_key": "产品分析",
+      "core_tags": ["产品分析", "竞品对比", "深度测评", "体验报告"],
+      "hot_tags": ["深度解读", "内部逻辑", "揭秘"],
+      "audience_tags": ["产品经理", "互联网从业者", "创业者"],
+      "hashtag_style": "#产品分析 #竞品对比 #深度测评 #产品经理 #互联网"
+    },
+    "学习方法": {
+      "topic_key": "学习方法",
+      "core_tags": ["学习", "方法论", "效率", "技巧"],
+      "hot_tags": ["学霸秘籍", "快速提升", "必学"],
+      "audience_tags": ["学生", "终身学习者", "自学者"],
+      "hashtag_style": "#学习方法 #效率提升 #学霸秘籍 #自我提升 #学习技巧"
+    }
+  },
+  "_default_strategy": {
+    "core_tags": ["内容创作", "干货分享", "知识分享"],
+    "hot_tags": ["必看", "推荐", "收藏"],
+    "audience_tags": ["通用受众"],
+    "hashtag_style": "#干货分享 #知识分享 #内容创作"
+  }
+}
