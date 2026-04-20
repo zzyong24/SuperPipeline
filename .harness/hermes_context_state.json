@@ -1,0 +1,12 @@
+{
+  "agent": "hermes",
+  "updated_at": "2026-04-21T01:50:00Z",
+  "token_usage_ratio": 0.0,
+  "consecutive_sprints_with_retries": 0,
+  "last_reset_at": null,
+  "current_sprint": "sprint_20260421_1",
+  "last_evaluated_feature": null,
+  "last_eval_result": null,
+  "session_start": "2026-04-21T01:50:00Z",
+  "pending_eval": null
+}

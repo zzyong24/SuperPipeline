@@ -1,0 +1,20 @@
+{
+  "sprint_id": "sprint_20260421_1",
+  "created_at": "2026-04-21T01:50:00Z",
+  "created_by": "hermes",
+  "generator_contract": "完成 f001 的全部 acceptance criteria，使 SuperPipeline 具备 harness 工程化基础设施",
+  "features": ["f001", "f001-1", "f001-2"],
+  "evaluator_criteria": {
+    "pass": "所有 acceptance 测试通过，0 error，格式验证通过",
+    "retry": "有 acceptance 未通过但明确可修复",
+    "fail": "方向性错误或阻塞，需重新规划"
+  },
+  "human_checkpoint": true,
+  "max_iterations": 3,
+  "iteration_history": [],
+  "sprint_goal": "让 SuperPipeline 自己具备 harness 监管能力",
+  "out_of_scope": [
+    "不实现 Claude Code / Hermes 的 Skill 层自动化（那是后续阶段的事）",
+    "不修改 content_generator 的具体生成逻辑（那是 f002/f003 的范围）"
+  ]
+}

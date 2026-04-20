@@ -1,0 +1,251 @@
+{
+  "version": "1.1",
+  "updated_at": "2026-04-21T02:10:00Z",
+  "updated_by": "hermes-auto",
+  "sprint": "sprint_20260421_1",
+  "features": [
+    {
+      "id": "f001",
+      "name": "SuperPipeline Harness 工程化",
+      "title": "f001 - SuperPipeline 三层架构 + 六层机制落地",
+      "status": "completed",
+      "assignee": "claude-code",
+      "priority": "P0",
+      "phase": 4,
+      "next_phases": [
+        {
+          "phase": 1,
+          "action": "plan",
+          "done": true
+        },
+        {
+          "phase": 2,
+          "action": "implement",
+          "done": true,
+          "current": true
+        },
+        {
+          "phase": 3,
+          "action": "verify",
+          "done": true
+        },
+        {
+          "phase": 4,
+          "action": "deliver",
+          "done": true
+        }
+      ],
+      "acceptance": [
+        ".harness/ 目录结构完整，包含全部 8 个文件（feature_list.json、sprint_contract、eval_log、两套 handoff、两套 context_state、spec/）",
+        "AGENTS.md 存在于项目根目录，Claude Code 启动时加载 Generator 约束",
+        "SuperPipeline server/ 可正常启动，无 import 错误",
+        "feature_list.json 格式通过 schema 验证（无多余字段/缺少必须字段）"
+      ],
+      "depends_on": [],
+      "parent_id": null,
+      "children": [
+        "f001-1",
+        "f001-2"
+      ],
+      "branch": "feature/f001-harness-engineering",
+      "commit": null,
+      "pr_url": null,
+      "created_at": "2026-04-21T01:50:00Z",
+      "completed_at": "2026-04-21T02:10:00Z",
+      "sprint_id": "sprint_20260421_1"
+    },
+    {
+      "id": "f001-1",
+      "name": "Harness 文件层初始化",
+      "title": "f001-1 - 创建全部 .harness/ 文件",
+      "status": "completed",
+      "assignee": "claude-code",
+      "priority": "P0",
+      "phase": 4,
+      "next_phases": [
+        {
+          "phase": 1,
+          "action": "plan",
+          "done": true
+        },
+        {
+          "phase": 2,
+          "action": "implement",
+          "done": true,
+          "current": true
+        },
+        {
+          "phase": 3,
+          "action": "verify",
+          "done": true
+        },
+        {
+          "phase": 4,
+          "action": "deliver",
+          "done": true
+        }
+      ],
+      "acceptance": [
+        ".harness/sprint_contracts/sprint_20260421_1.json 存在且格式正确",
+        ".harness/spec/index.md 包含 Pre-Development Checklist",
+        ".harness/spec/guides/acceptance-writing.md 包含验收标准写作规范",
+        ".harness/claude_code_context_state.json 和 hermes_context_state.json 初始状态正确"
+      ],
+      "depends_on": [],
+      "parent_id": "f001",
+      "children": [],
+      "branch": "feature/f001-harness-engineering",
+      "commit": null,
+      "pr_url": null,
+      "created_at": "2026-04-21T01:50:00Z",
+      "completed_at": "2026-04-21T02:10:00Z",
+      "sprint_id": "sprint_20260421_1"
+    },
+    {
+      "id": "f001-2",
+      "name": "Generator 约束落地",
+      "title": "f001-2 - AGENTS.md + Generator 约束",
+      "status": "completed",
+      "assignee": "claude-code",
+      "priority": "P1",
+      "phase": 4,
+      "next_phases": [
+        {
+          "phase": 1,
+          "action": "plan",
+          "done": true,
+          "current": true
+        },
+        {
+          "phase": 2,
+          "action": "implement",
+          "done": true
+        },
+        {
+          "phase": 3,
+          "action": "verify",
+          "done": true
+        },
+        {
+          "phase": 4,
+          "action": "deliver",
+          "done": true
+        }
+      ],
+      "acceptance": [
+        "SuperPipeline/AGENTS.md 存在，包含 phase-driven workflow",
+        "AGENTS.md 禁止跳 phase、禁止自行定义 acceptance",
+        "SuperPipeline/server/AGENTS.md 存在，包含 Python 特定规范",
+        "SuperPipeline/web/AGENTS.md 存在，包含 Next.js 特定规范"
+      ],
+      "depends_on": [
+        "f001-1"
+      ],
+      "parent_id": "f001",
+      "children": [],
+      "branch": "feature/f001-harness-engineering",
+      "commit": null,
+      "pr_url": null,
+      "created_at": "2026-04-21T01:50:00Z",
+      "completed_at": "2026-04-21T02:10:00Z",
+      "sprint_id": "sprint_20260421_1"
+    },
+    {
+      "id": "f002",
+      "name": "SuperPipeline 内容质量监管",
+      "title": "f002 - 内容质量监管闭环",
+      "status": "pending",
+      "assignee": "claude-code",
+      "priority": "P1",
+      "phase": 1,
+      "next_phases": [
+        {
+          "phase": 1,
+          "action": "plan",
+          "done": false,
+          "current": true
+        },
+        {
+          "phase": 2,
+          "action": "implement",
+          "done": false
+        },
+        {
+          "phase": 3,
+          "action": "verify",
+          "done": false
+        },
+        {
+          "phase": 4,
+          "action": "deliver",
+          "done": false
+        }
+      ],
+      "acceptance": [
+        "content_generator 严格遵守素材约束（不胡编），素材来源记录可追溯",
+        "douyin.validate() 下限检查生效（2000字、3张图），不满足时阻止发布",
+        "审核风格规则生效（无 emoji、像真人写的），不满足时返回修改要求",
+        "审核结果反馈给 content_generator，形成闭环"
+      ],
+      "depends_on": [],
+      "parent_id": null,
+      "children": [],
+      "branch": "feature/f002-content-quality",
+      "commit": null,
+      "pr_url": null,
+      "created_at": "2026-04-21T01:50:00Z",
+      "completed_at": null,
+      "sprint_id": "sprint_20260421_1"
+    },
+    {
+      "id": "f003",
+      "name": "SuperPipeline 内容优化机制",
+      "title": "f003 - 高质量内容产出优化",
+      "status": "pending",
+      "assignee": "claude-code",
+      "priority": "P2",
+      "phase": 1,
+      "next_phases": [
+        {
+          "phase": 1,
+          "action": "plan",
+          "done": false,
+          "current": true
+        },
+        {
+          "phase": 2,
+          "action": "implement",
+          "done": false
+        },
+        {
+          "phase": 3,
+          "action": "verify",
+          "done": false
+        },
+        {
+          "phase": 4,
+          "action": "deliver",
+          "done": false
+        }
+      ],
+      "acceptance": [
+        "源文档中的真实图片被优先复用，而非全量 AI 生成",
+        "内容结构符合抖音爆款规律（开头钩子、中间信息密度、结尾引导互动）",
+        "标签策略优化（基于 topic 历史数据自动生成标签组合）",
+        "发布前内容自检清单通过率 > 90%（针对抖音平台）"
+      ],
+      "depends_on": [
+        "f002"
+      ],
+      "parent_id": null,
+      "children": [],
+      "branch": "feature/f003-content-optimization",
+      "commit": null,
+      "pr_url": null,
+      "created_at": "2026-04-21T01:50:00Z",
+      "completed_at": null,
+      "sprint_id": "sprint_20260421_1"
+    }
+  ],
+  "blocked": []
+}

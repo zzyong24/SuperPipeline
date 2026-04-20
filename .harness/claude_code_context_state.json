@@ -1,0 +1,11 @@
+{
+  "agent": "claude-code",
+  "updated_at": "2026-04-21T01:50:00Z",
+  "token_usage_ratio": 0.0,
+  "consecutive_retries": 0,
+  "last_reset_at": null,
+  "sprint_current": "sprint_20260421_1",
+  "current_phase": 1,
+  "current_feature": "f001",
+  "session_start": "2026-04-21T01:50:00Z"
+}
