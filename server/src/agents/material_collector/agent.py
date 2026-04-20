@@ -35,6 +35,7 @@ class MaterialCollectorAgent(BaseAgent):
                     title=doc.title or doc.file_path.split("/")[-1],
                     snippet=doc.content[:500] if doc.content else "",
                     source_type="document",
+                    source_url=doc.file_path,
                 ).model_dump()
                 for doc in docs
                 if doc.content
@@ -60,4 +61,8 @@ class MaterialCollectorAgent(BaseAgent):
             raise ValueError(f"Failed to parse materials response: {e}\nRaw: {response[:500]}") from e
 
         materials = [Material.model_validate(m).model_dump() for m in raw_materials]
+        # Ensure web materials have source_url
+        for m in materials:
+            if m.get("source_type") == "web" and not m.get("source_url"):
+                m["source_url"] = m.get("source", "")
         return {"materials": materials}

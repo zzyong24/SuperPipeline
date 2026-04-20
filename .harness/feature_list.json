@@ -1,8 +1,8 @@
 {
   "version": "1.1",
-  "updated_at": "2026-04-21T02:10:00Z",
+  "updated_at": "2026-04-21T02:25:00Z",
   "updated_by": "hermes-auto",
-  "sprint": "sprint_20260421_1",
+  "sprint": "sprint_20260421_2",
   "features": [
     {
       "id": "f001",
@@ -154,31 +154,32 @@
       "id": "f002",
       "name": "SuperPipeline 内容质量监管",
       "title": "f002 - 内容质量监管闭环",
-      "status": "pending",
+      "status": "completed",
       "assignee": "claude-code",
       "priority": "P1",
-      "phase": 1,
+      "phase": 4,
       "next_phases": [
         {
           "phase": 1,
           "action": "plan",
-          "done": false,
+          "done": true,
           "current": true
         },
         {
           "phase": 2,
           "action": "implement",
-          "done": false
+          "done": true,
+          "current": true
         },
         {
           "phase": 3,
           "action": "verify",
-          "done": false
+          "done": true
         },
         {
           "phase": 4,
           "action": "deliver",
-          "done": false
+          "done": true
         }
       ],
       "acceptance": [
@@ -191,11 +192,11 @@
       "parent_id": null,
       "children": [],
       "branch": "feature/f002-content-quality",
-      "commit": null,
+      "commit": "5bc8c60",
       "pr_url": null,
       "created_at": "2026-04-21T01:50:00Z",
-      "completed_at": null,
-      "sprint_id": "sprint_20260421_1"
+      "completed_at": "2026-04-21T02:25:00Z",
+      "sprint_id": "sprint_20260421_2"
     },
     {
       "id": "f003",

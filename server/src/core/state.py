@@ -73,6 +73,7 @@ class Material(BaseModel):
     title: str = Field(default="")
     snippet: str = Field(default="", description="Relevant excerpt")
     source_type: str = Field(default="web", description="web | local_kb | manual | document")
+    source_url: Optional[str] = Field(default=None, description="Canonical URL for web materials; required for web type, may be null for document type")
 
 
 class PlatformContent(BaseModel):
